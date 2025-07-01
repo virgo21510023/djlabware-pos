@@ -16,6 +16,7 @@ router.post('/products', protect, admin, productController.createProduct);
 // ... rute PUT dan DELETE
 
 // Transaction Routes
+router.post('/products', protect, admin, productController.createProduct);
 router.post('/transactions', protect, transactionController.createTransaction);
 // ... rute GET
 

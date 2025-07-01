@@ -53,29 +53,25 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useProductStore } from '../stores/product';
+import { storeToRefs } from 'pinia';
 import axios from 'axios';
 import { Trash2, LoaderCircle } from 'lucide-vue-next';
 
-const products = ref([]);
+// Setup Product Store
+const productStore = useProductStore();
+// Gunakan storeToRefs agar state (products, loading) tetap reaktif
+const { products, loading } = storeToRefs(productStore);
+
+// State lokal untuk halaman POS
 const searchQuery = ref('');
 const cart = ref([]);
-const loading = ref(false);
 const paymentLoading = ref(false);
 
-const fetchProducts = async () => {
-  loading.value = true;
-  try {
-    const { data } = await axios.get('/products');
-    products.value = data.products;
-  } catch (error) {
-    console.error("Gagal mengambil data produk:", error);
-    alert('Gagal mengambil data produk.');
-  } finally {
-    loading.value = false;
-  }
-};
-
-onMounted(fetchProducts);
+// Panggil action untuk fetch produk saat komponen pertama kali dimuat
+onMounted(() => {
+  productStore.fetchProducts();
+});
 
 const filteredProducts = computed(() => {
   if (!searchQuery.value) return products.value;
@@ -86,7 +82,7 @@ const filteredProducts = computed(() => {
 });
 
 const total = computed(() => {
-  return cart.value.reduce((sum, item) => sum + (item.sell_price * item.quantity), 0);
+  return cart.value.reduce((sum, item) => sum + (item.sell_price * item.quantity), 0).toLocaleString('id-ID');
 });
 
 function addToCart(product) {
@@ -117,7 +113,7 @@ async function processPayment() {
     await axios.post('/transactions', payload);
     alert('Transaksi berhasil!');
     cart.value = [];
-    await fetchProducts(); // Refresh product list to update stock
+    await productStore.fetchProducts(); // Refresh product list untuk update stok
   } catch (error) {
     alert(`Transaksi gagal: ${error.response?.data?.message || error.message}`);
   } finally {
