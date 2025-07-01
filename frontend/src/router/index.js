@@ -2,10 +2,14 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth';
 
 import AppLayout from '../layouts/AppLayout.vue'
+import Login from '../views/Login.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Pos from '../views/Pos.vue'
-import Login from '../views/Login.vue'
 import Inventory from '../views/Inventory.vue'
+import History from '../views/History.vue';
+import Reports from '../views/Reports.vue';
+import Users from '../views/Users.vue';
+import Settings from '../views/Settings.vue';
 
 const routes = [
   {
@@ -21,7 +25,10 @@ const routes = [
       { path: '', name: 'Dashboard', component: Dashboard },
       { path: 'pos', name: 'POS', component: Pos },
       { path: 'inventory', name: 'Inventory', component: Inventory, meta: { requiresAdmin: true } },
-      // Tambahkan route lain di sini
+      { path: 'history', name: 'Riwayat', component: History, meta: { requiresAdmin: true } },
+      { path: 'reports', name: 'Reports', component: Reports, meta: { requiresAdmin: true } },
+      { path: 'users', name: 'Users', component: Users, meta: { requiresAdmin: true } },
+      { path: 'settings', name: 'Settings', component: Settings, meta: { requiresAdmin: true } },
     ]
   }
 ];

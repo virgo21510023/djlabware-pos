@@ -1,30 +1,34 @@
 const { Product, Sequelize } = require('../models');
 const { Op } = Sequelize;
 
-// GET All Products (sudah ada)
+// GET All Products
 exports.getAllProducts = async (req, res) => {
-  // ... (kode yang sudah ada, tidak perlu diubah)
-  const { search, page = 1, limit = 1000 } = req.query;
-  const offset = (page - 1) * limit;
+  // Ambil page dan limit dari query, beri nilai default
+  const { search, page = 1, limit = 10 } = req.query; 
+  const offset = (parseInt(page) - 1) * parseInt(limit);
+
   try {
     const whereClause = search ? {
       [Op.or]: [
         { name: { [Op.like]: `%${search}%` } },
-        { sku: { [Op.like]: `%${search}%` } }
+        { sku: { [Op.like]: `%${search}%` } },
+        { kategori: { [Op.like]: `%${search}%` } },
+        { merk: { [Op.like]: `%${search}%` } }
       ]
     } : {};
 
+    // Gunakan findAndCountAll untuk paginasi
     const { count, rows } = await Product.findAndCountAll({
       where: whereClause,
       limit: parseInt(limit),
-      offset: parseInt(offset),
+      offset: offset,
       order: [['name', 'ASC']]
     });
 
     res.json({
       totalItems: count,
       products: rows,
-      totalPages: Math.ceil(count / limit),
+      totalPages: Math.ceil(count / parseInt(limit)),
       currentPage: parseInt(page)
     });
   } catch (error) {
@@ -32,15 +36,43 @@ exports.getAllProducts = async (req, res) => {
   }
 };
 
-// CREATE Product (tambahkan/pastikan kode ini ada)
+
+// CREATE Product
 exports.createProduct = async (req, res) => {
   try {
     const product = await Product.create(req.body);
     res.status(201).json(product);
   } catch (error) {
-    // Kirim pesan error yang lebih spesifik jika ada
     res.status(400).json({ message: "Gagal membuat produk", error: error.message });
   }
 };
 
-// Tambahkan fungsi getProductById, updateProduct, deleteProduct nanti...
+// UPDATE Product
+exports.updateProduct = async (req, res) => {
+  try {
+    const product = await Product.findByPk(req.params.id);
+    if (product) {
+      await product.update(req.body);
+      res.json(product);
+    } else {
+      res.status(404).json({ message: 'Produk tidak ditemukan' });
+    }
+  } catch (error) {
+    res.status(400).json({ message: 'Gagal memperbarui produk', error: error.message });
+  }
+};
+
+// DELETE Product
+exports.deleteProduct = async (req, res) => {
+  try {
+    const product = await Product.findByPk(req.params.id);
+    if (product) {
+      await product.destroy();
+      res.json({ message: 'Produk berhasil dihapus' });
+    } else {
+      res.status(404).json({ message: 'Produk tidak ditemukan' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal menghapus produk', error: error.message });
+  }
+};

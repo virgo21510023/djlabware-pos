@@ -31,7 +31,9 @@ exports.createTransaction = async (req, res) => {
       total_amount,
       total_hpp,
       payment_method,
-      status: 'Selesai'
+      status: 'Selesai',
+      // PASTIKAN BARIS INI ADA
+      transaction_date: new Date()
     }, { transaction: t });
 
     for (const item of items) {
@@ -52,6 +54,23 @@ exports.createTransaction = async (req, res) => {
   } catch (error) {
     await t.rollback();
     res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getAllTransactions = async (req, res) => {
+  try {
+    const transactions = await Transaction.findAll({
+      // Urutkan berdasarkan yang paling baru
+      order: [['createdAt', 'DESC']],
+      // Sertakan data nama kasir (User) yang terkait
+      include: [{
+        model: User,
+        attributes: ['name'] // Hanya ambil kolom nama
+      }]
+    });
+    res.json(transactions);
+  } catch (error) {
+    res.status(500).json({ message: "Gagal mengambil data transaksi", error: error.message });
   }
 };
 // Tambahkan fungsi getTransactions, getTransactionById, dll.
