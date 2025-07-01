@@ -36,16 +36,19 @@
         <span>Sisa Bayar</span>
         <span>{{ formatRupiah(transaction.remaining_amount) }}</span>
       </div>
-      <div v-if="transaction.payment_method === 'Tunai'" class="flex justify-between">
+      <div v-if="transaction.payment_method === 'Tunai' && transaction.status === 'Lunas'" class="flex justify-between">
         <span>Tunai</span>
         <span>{{ formatRupiah(transaction.amount_paid) }}</span>
       </div>
-      <div v-if="transaction.payment_method === 'Tunai'" class="flex justify-between">
+      <div v-if="transaction.payment_method === 'Tunai' && transaction.status === 'Lunas'" class="flex justify-between">
         <span>Kembali</span>
         <span>{{ formatRupiah(transaction.amount_paid - transaction.total_amount) }}</span>
       </div>
     </div>
     <hr class="my-2 border-dashed border-black">
+    <div v-if="storeInfo.store_note" class="text-xs text-center my-2">
+      <p>{{ storeInfo.store_note }}</p>
+    </div>
     <p class="text-xs text-center mt-2">
       {{ transaction.status === 'Belum Lunas' ? 'Simpan struk ini untuk pelunasan.' : 'Terima kasih telah berbelanja!' }}
     </p>
@@ -54,7 +57,6 @@
 
 <script setup>
 import { format } from 'date-fns';
-import { id } from 'date-fns/locale/id';
 
 defineProps({
   transaction: Object,
@@ -62,7 +64,10 @@ defineProps({
 });
 
 const formatRupiah = (number) => Number(number ? number : 0).toLocaleString('id-ID');
-const formatTanggal = (dateString) => format(new Date(dateString), "dd/MM/yy HH:mm");
+const formatTanggal = (dateString) => {
+  if (!dateString) return '';
+  return format(new Date(dateString), "dd/MM/yy HH:mm");
+}
 </script>
 
 <style scoped>

@@ -8,25 +8,35 @@ const { Op } = require('sequelize');
 exports.getSalesReport = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-
     if (!startDate || !endDate) {
       return res.status(400).json({ message: "Rentang tanggal harus diisi" });
     }
+    
+    const dateFilter = {
+      transaction_date: {
+        [Op.between]: [new Date(startDate), new Date(`${endDate}T23:59:59`)]
+      }
+    };
 
+    // 1. Ambil data utama (Omzet, HPP, Total Transaksi)
     const salesReport = await Transaction.findOne({
       attributes: [
-        // Omzet adalah total nilai barang yang terjual dalam periode ini
         [sequelize.fn('SUM', sequelize.col('total_amount')), 'totalOmzet'],
-        // HPP dicocokkan dengan penjualan di periode yang sama
         [sequelize.fn('SUM', sequelize.col('total_hpp')), 'totalHpp'],
         [sequelize.fn('COUNT', sequelize.col('id')), 'totalTransactions']
       ],
-      where: {
-        // Filter berdasarkan tanggal transaksi dibuat
-        transaction_date: {
-          [Op.between]: [new Date(startDate), new Date(`${endDate}T23:59:59`)]
-        }
-      },
+      where: dateFilter,
+      raw: true
+    });
+
+    // 2. Ambil rincian jumlah transaksi per metode pembayaran
+    const paymentMethodSummary = await Transaction.findAll({
+      attributes: [
+        'payment_method',
+        [sequelize.fn('COUNT', sequelize.col('payment_method')), 'count']
+      ],
+      where: dateFilter,
+      group: ['payment_method'],
       raw: true
     });
 
@@ -38,6 +48,7 @@ exports.getSalesReport = async (req, res) => {
       totalOmzet,
       labaKotor,
       totalTransactions: parseInt(salesReport?.totalTransactions) || 0,
+      paymentMethodSummary // <-- Kirim data baru ini ke frontend
     });
 
   } catch (error) {

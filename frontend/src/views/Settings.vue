@@ -20,6 +20,10 @@
             <label for="storePhone" class="block text-sm font-medium">No. Telepon / Kontak</label>
             <input v-model="storeInfo.store_phone" type="text" id="storePhone" class="mt-1 w-full p-2 border rounded-md bg-background dark:bg-dark-background">
           </div>
+          <div>
+            <label for="storeNote" class="block text-sm font-medium">Catatan Struk (Opsional)</label>
+            <input v-model="storeInfo.store_note" type="text" id="storeNote" placeholder="Contoh: Barang yang sudah dibeli tidak dapat dikembalikan." class="mt-1 w-full p-2 border rounded-md bg-background dark:bg-dark-background">
+          </div>
           <div class="flex justify-end">
             <button type="submit" class="bg-primary text-white font-bold py-2 px-4 rounded-md hover:bg-primary/90">
               Simpan Informasi
@@ -35,15 +39,15 @@
       <div class="bg-surface dark:bg-dark-surface p-6 rounded-lg shadow">
         <div class="flex items-center space-x-8">
           <label class="flex items-center cursor-pointer">
-            <input type="radio" v-model="selectedTheme" value="light" class="form-radio">
+            <input type="radio" v-model="selectedTheme" value="light" class="form-radio text-primary focus:ring-primary">
             <span class="ml-2">Light</span>
           </label>
           <label class="flex items-center cursor-pointer">
-            <input type="radio" v-model="selectedTheme" value="dark" class="form-radio">
+            <input type="radio" v-model="selectedTheme" value="dark" class="form-radio text-primary focus:ring-primary">
             <span class="ml-2">Dark</span>
           </label>
           <label class="flex items-center cursor-pointer">
-            <input type="radio" v-model="selectedTheme" value="system" class="form-radio">
+            <input type="radio" v-model="selectedTheme" value="system" class="form-radio text-primary focus:ring-primary">
             <span class="ml-2">Sistem</span>
           </label>
         </div>
@@ -64,7 +68,8 @@ const authStore = useAuthStore();
 const storeInfo = reactive({
   store_name: '',
   store_address: '',
-  store_phone: ''
+  store_phone: '',
+  store_note: ''
 });
 
 const fetchStoreInfo = async () => {
@@ -105,7 +110,7 @@ watch(selectedTheme, (newTheme) => {
   applyTheme(newTheme);
 });
 
-// Terapkan tema saat komponen pertama kali dimuat
+// Terapkan tema dan ambil data saat komponen pertama kali dimuat
 onMounted(() => {
   applyTheme(selectedTheme.value);
   fetchStoreInfo();
