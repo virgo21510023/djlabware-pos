@@ -1,0 +1,15 @@
+/* frontend/src/style.css */
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-on-surface;
+  }
+  .dark body {
+    @apply bg-dark-background text-dark-on-surface;
+  }
+}
