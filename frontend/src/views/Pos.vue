@@ -39,30 +39,24 @@
         <div class="bg-surface dark:bg-dark-surface rounded-lg p-4 h-full flex flex-col h-[calc(100vh-8.5rem)]">
           <h3 class="text-xl font-bold mb-4 flex-shrink-0">Keranjang</h3>
           
-          <div class="flex-grow overflow-y-auto">
-            <p v-if="cart.length === 0" class="text-secondary dark:text-dark-secondary">Keranjang masih kosong.</p>
-            <div v-else v-for="(item, index) in cart" :key="item.id" class="grid grid-cols-3 gap-2 items-center mb-4 pr-2">
-              <div class="col-span-2">
+          <div class="flex-grow overflow-y-auto pr-2">
+            <p v-if="cart.length === 0" class="text-center py-10 text-secondary dark:text-dark-secondary">Keranjang kosong.</p>
+            <div v-else v-for="(item, index) in cart" :key="item.id" class="flex items-center justify-between mb-4">
+              <div class="flex-1 min-w-0 mr-2">
                 <p class="font-medium truncate">{{ item.name }}</p>
                 <p class="text-sm text-secondary dark:text-dark-secondary">
-                  Rp {{ formatRupiah(item.sell_price) }} / {{ item.satuan }}
+                  Rp {{ formatRupiah(item.sell_price) }}
                 </p>
               </div>
-              <div class="flex justify-end">
-                <button @click="cart.splice(index, 1)" class="text-gray-400 hover:text-red-500">
+              <div class="flex items-center flex-shrink-0">
+                <div class="flex items-center border rounded-md p-1">
+                  <button @click="updateQuantity(item, -1)" class="px-2 font-medium">-</button>
+                  <span class="w-24 text-center font-semibold">{{ item.quantity }} {{ item.satuan }}</span>
+                  <button @click="updateQuantity(item, 1)" class="px-2 font-medium">+</button>
+                </div>
+                <button @click="cart.splice(index, 1)" class="ml-3 text-gray-400 hover:text-red-500">
                   <Trash2 class="w-5 h-5"/>
                 </button>
-              </div>
-              <div class="col-span-3 flex items-center justify-between bg-background dark:bg-dark-background rounded-md p-1">
-                <button @click="updateQuantity(item, -1)" class="px-3 py-1 rounded text-lg font-bold">-</button>
-                <input 
-                  type="number" 
-                  v-model.number="item.quantity"
-                  @change="validateQuantity(item)"
-                  min="1" :max="item.stock"
-                  class="w-16 text-center bg-transparent font-semibold focus:outline-none"
-                />
-                <button @click="updateQuantity(item, 1)" class="px-3 py-1 rounded text-lg font-bold">+</button>
               </div>
             </div>
           </div>
@@ -70,42 +64,143 @@
           <div class="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
             <div class="flex justify-between items-center text-2xl font-bold mb-4">
               <span>Total</span>
-              <span>Rp {{ total }}</span>
+              <span>Rp {{ totalRupiah }}</span>
             </div>
-            <button @click="processPayment" :disabled="cart.length === 0 || paymentLoading"
-              class="w-full py-3 text-white font-bold rounded-lg transition-colors bg-primary hover:bg-primary/90 disabled:bg-gray-400 disabled:cursor-not-allowed flex justify-center items-center"
-            >
-              <LoaderCircle v-if="paymentLoading" class="animate-spin mr-2" />
-              <span>Bayar</span>
+            <button @click="openPaymentModal" :disabled="isCartEmpty" class="w-full p-3 bg-primary text-white rounded-md disabled:opacity-50 font-semibold text-lg">
+              Lanjutkan Pembayaran
             </button>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <div v-if="isPaymentModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+    <div class="bg-surface dark:bg-dark-surface rounded-lg p-6 w-full max-w-md shadow-xl">
+      <h2 class="text-xl font-bold mb-4">Detail Pembayaran</h2>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium">Nama Pelanggan</label>
+          <input v-model="paymentData.customer_name" type="text" placeholder="Nama Pelanggan (Opsional)" class="mt-1 w-full p-2 border rounded-md bg-background dark:bg-dark-background" />
+        </div>
+
+        <div class="flex items-center justify-between p-3 bg-background dark:bg-dark-background rounded-lg">
+          <label for="is_dp" class="font-medium">Bayar DP (Uang Muka)?</label>
+          <button @click="paymentData.is_dp = !paymentData.is_dp" :class="paymentData.is_dp ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+            <span :class="paymentData.is_dp ? 'translate-x-6' : 'translate-x-1'" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"></span>
+          </button>
+        </div>
+
+        <div v-if="paymentData.is_dp" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium">Jumlah DP</label>
+            <input v-model.number="paymentData.amount_paid" type="number" class="mt-1 w-full p-2 text-xl border rounded-md" ref="dpInputRef">
+          </div>
+          <div class="flex justify-between text-lg font-bold">
+            <span>Sisa Tagihan:</span>
+            <span>Rp {{ remainingBalanceRupiah }}</span>
+          </div>
+        </div>
+
+        <div v-else class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium">Metode Pembayaran</label>
+            <select v-model="paymentData.payment_method" class="mt-1 w-full p-2 border rounded-md bg-background dark:bg-dark-background">
+              <option>Tunai</option>
+              <option>QRIS</option>
+              <option>Transfer</option>
+            </select>
+          </div>
+          <div v-if="paymentData.payment_method === 'Tunai'">
+            <label class="block text-sm font-medium">Uang Diterima</label>
+            <input v-model.number="cashReceived" type="number" class="mt-1 w-full p-2 text-xl border rounded-md" ref="cashInputRef">
+            <div class="mt-2 flex justify-between text-lg font-bold"><span>Kembalian:</span> <span>Rp {{ changeRupiah }}</span></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-6 flex justify-end space-x-4">
+        <button type="button" @click="isPaymentModalOpen = false" class="px-4 py-2 border rounded-md">Batal</button>
+        <button @click="processPayment" :disabled="isConfirmDisabled" class="px-4 py-2 bg-primary dark:bg-dark-primary dark:text-dark-surface text-white rounded-md disabled:opacity-50">
+          <span v-if="paymentLoading">Memproses...</span>
+          <span v-else>Konfirmasi Pembayaran</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="lastTransaction" class="print-area">
+    <Struk :transaction="lastTransaction" :storeInfo="storeInfo" />
+  </div>
 </template>
 
+<style>
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+}
+</style>
+
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick, reactive } from 'vue';
 import { useProductStore } from '../stores/product';
 import { storeToRefs } from 'pinia';
 import axios from 'axios';
 import { Trash2, LoaderCircle } from 'lucide-vue-next';
+import Struk from '../components/Struk.vue';
 
+// Store & State
 const productStore = useProductStore();
 const { products, loading } = storeToRefs(productStore);
 
 const searchQuery = ref('');
 const cart = ref([]);
 const paymentLoading = ref(false);
+const lastTransaction = ref(null);
+const storeInfo = reactive({});
 
-const formatRupiah = (number) => {
-  if (number === null || number === undefined) return '0';
-  return Number(number).toLocaleString('id-ID');
-}
+// State Modal Pembayaran Universal
+const isPaymentModalOpen = ref(false);
+const paymentData = reactive({
+  customer_name: '',
+  is_dp: false,
+  payment_method: 'Tunai',
+  amount_paid: 0,
+});
+const cashReceived = ref(0); // Khusus untuk perhitungan kembalian
+const cashInputRef = ref(null);
+const dpInputRef = ref(null);
 
-onMounted(() => {
-  productStore.fetchProducts();
+// Computed Properties
+const totalNumber = computed(() => cart.value.reduce((sum, item) => sum + (item.sell_price * item.quantity), 0));
+const totalRupiah = computed(() => formatRupiah(totalNumber.value));
+const isCartEmpty = computed(() => cart.value.length === 0);
+
+const changeRupiah = computed(() => {
+  if (!paymentData.is_dp && paymentData.payment_method === 'Tunai' && cashReceived.value >= totalNumber.value) {
+    return formatRupiah(cashReceived.value - totalNumber.value);
+  }
+  return '0';
+});
+
+const remainingBalanceRupiah = computed(() => {
+  if (paymentData.is_dp && paymentData.amount_paid > 0 && paymentData.amount_paid < totalNumber.value) {
+    return formatRupiah(totalNumber.value - paymentData.amount_paid);
+  }
+  return formatRupiah(totalNumber.value);
+});
+
+const isConfirmDisabled = computed(() => {
+  if (paymentLoading.value) return true;
+  if (paymentData.is_dp) {
+    return !paymentData.amount_paid || paymentData.amount_paid <= 0 || paymentData.amount_paid >= totalNumber.value;
+  }
+  if (paymentData.payment_method === 'Tunai') {
+    return !cashReceived.value || cashReceived.value < totalNumber.value;
+  }
+  return false;
 });
 
 const filteredProducts = computed(() => {
@@ -118,11 +213,24 @@ const filteredProducts = computed(() => {
   );
 });
 
-const total = computed(() => {
-  const totalAmount = cart.value.reduce((sum, item) => sum + (item.sell_price * item.quantity), 0);
-  return formatRupiah(totalAmount);
+// Helper Function
+const formatRupiah = (number) => {
+  if (number === null || number === undefined) return '0';
+  return Number(number).toLocaleString('id-ID');
+};
+
+// Lifecycle Hooks
+onMounted(async () => {
+  productStore.fetchProducts();
+  try {
+    const response = await axios.get('/settings');
+    Object.assign(storeInfo, response.data);
+  } catch (error) {
+    console.error("Gagal memuat info toko untuk struk");
+  }
 });
 
+// Methods
 function addToCart(product) {
   if (product.stock <= 0) {
     alert("Stok produk habis!");
@@ -140,37 +248,64 @@ function addToCart(product) {
   }
 }
 
-// FUNGSI BARU UNTUK +/-
 function updateQuantity(item, amount) {
   const newQuantity = item.quantity + amount;
   if (newQuantity > 0 && newQuantity <= item.stock) {
     item.quantity = newQuantity;
-  } else if (newQuantity > item.stock) {
+  } else if (newQuantity <= 0) {
+    const itemIndex = cart.value.findIndex(cartItem => cartItem.id === item.id);
+    if (itemIndex > -1) {
+      cart.value.splice(itemIndex, 1);
+    }
+  } else {
     alert(`Stok maksimal untuk ${item.name} adalah ${item.stock}.`);
     item.quantity = item.stock;
   }
 }
 
-// FUNGSI BARU UNTUK VALIDASI INPUT MANUAL
-function validateQuantity(item) {
-  if (item.quantity > item.stock) {
-    alert(`Stok maksimal untuk ${item.name} adalah ${item.stock}.`);
-    item.quantity = item.stock;
-  } else if (item.quantity < 1) {
-    item.quantity = 1;
-  }
+const openPaymentModal = () => {
+  if (isCartEmpty.value) return;
+  // Reset state
+  paymentData.customer_name = '';
+  paymentData.is_dp = false;
+  paymentData.payment_method = 'Tunai';
+  paymentData.amount_paid = 0;
+  cashReceived.value = 0;
+  isPaymentModalOpen.value = true;
+};
+
+const printReceipt = async (transactionData) => {
+  lastTransaction.value = transactionData;
+  await nextTick();
+  window.print();
+  lastTransaction.value = null;
 }
 
-async function processPayment() {
-  if (cart.value.length === 0) return;
+const processPayment = async () => {
+  if (isCartEmpty.value) return;
   paymentLoading.value = true;
+  
+  const payload = {
+    items: cart.value.map(item => ({ id: item.id, quantity: item.quantity })),
+    customer_name: paymentData.customer_name,
+    is_dp: paymentData.is_dp,
+  };
+
+  if (paymentData.is_dp) {
+    payload.payment_method = 'DP';
+    payload.amount_paid = paymentData.amount_paid;
+  } else {
+    payload.payment_method = paymentData.payment_method;
+    payload.amount_paid = payload.payment_method === 'Tunai' ? cashReceived.value : totalNumber.value;
+  }
+
   try {
-    const payload = {
-      items: cart.value.map(item => ({ id: item.id, quantity: item.quantity })),
-      payment_method: 'Tunai'
-    };
-    await axios.post('/transactions', payload);
-    alert('Transaksi berhasil!');
+    const response = await axios.post('/transactions', payload);
+    isPaymentModalOpen.value = false;
+    
+    await printReceipt(response.data);
+    
+    // Reset state setelah semua selesai
     cart.value = [];
     await productStore.fetchProducts();
   } catch (error) {
@@ -178,5 +313,5 @@ async function processPayment() {
   } finally {
     paymentLoading.value = false;
   }
-}
+};
 </script>

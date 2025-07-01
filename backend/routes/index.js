@@ -26,6 +26,8 @@ router.post('/transactions', protect, transactionController.createTransaction);
 router.put('/products/:id', protect, admin, productController.updateProduct);
 router.delete('/products/:id', protect, admin, productController.deleteProduct);
 router.get('/transactions', protect, admin, transactionController.getAllTransactions);
+router.get('/transactions/:id', protect, admin, transactionController.getTransactionById);
+router.put('/transactions/:id/settle', protect, admin, transactionController.settleTransaction);
 
 // Report Routes
 router.get('/reports/sales', protect, admin, reportController.getSalesReport);
