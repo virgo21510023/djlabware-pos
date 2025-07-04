@@ -12,6 +12,10 @@ import History from '../views/History.vue';
 import Reports from '../views/Reports.vue';
 import Users from '../views/Users.vue';
 import Settings from '../views/Settings.vue';
+import CreateQuotation from '../views/CreateQuotation.vue';
+import QuotationHistory from '../views/QuotationHistory.vue';
+import InvoiceList from '../views/InvoiceList.vue';
+import InvoiceDetail from '../views/InvoiceDetail.vue';
 
 const routes = [
   {
@@ -33,6 +37,10 @@ const routes = [
       { path: 'reports', name: 'Reports', component: Reports, meta: { requiresAdmin: true } },
       { path: 'users', name: 'Users', component: Users, meta: { requiresAdmin: true } },
       { path: 'settings', name: 'Settings', component: Settings, meta: { requiresAdmin: true } },
+      { path: 'quotations/new', name: 'Buat Penawaran', component: CreateQuotation, meta: { requiresAdmin: true } },
+      { path: 'quotations', name: 'Riwayat Penawaran', component: QuotationHistory, meta: { requiresAdmin: true } },
+      { path: 'invoices', name: 'Daftar Invoice', component: InvoiceList, meta: { requiresAdmin: true } },
+      { path: '/invoices/:id', name: 'Detail Invoice', component: InvoiceDetail, meta: { requiresAdmin: true } },
     ]
   }
 ];

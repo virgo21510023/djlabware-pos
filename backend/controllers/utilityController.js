@@ -1,5 +1,6 @@
 const { Product, sequelize } = require('../models');
 const { Op } = require('sequelize'); // Perbaikan ada di sini
+const terbilang = require('terbilang');
 
 // Mengambil semua kategori unik
 exports.getAllCategories = async (req, res) => {
@@ -43,4 +44,11 @@ exports.getAllBrands = async (req, res) => {
     console.error("!!! ERROR di getAllBrands:", error);
     res.status(500).json([]);
   }
+};
+
+exports.getTerbilang = (req, res) => {
+  const { amount } = req.query;
+  if (!amount) return res.status(400).json({ text: '' });
+  const text = terbilang(amount);
+  res.json({ text: `${text.charAt(0).toUpperCase() + text.slice(1)} Rupiah` });
 };

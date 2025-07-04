@@ -11,6 +11,8 @@ const userController = require('../controllers/userController');
 const settingsController = require('../controllers/settingsController');
 const purchaseController = require('../controllers/purchaseController');
 const utilityController = require('../controllers/utilityController');
+const quotationController = require('../controllers/quotationController');
+const invoiceController = require('../controllers/invoiceController');
 
 // Auth Routes
 router.post('/auth/login', authController.login);
@@ -54,5 +56,19 @@ router.get('/purchases/:id', protect, admin, purchaseController.getPurchaseById)
 // Utility Routes
 router.get('/utils/categories', protect, admin, utilityController.getAllCategories);
 router.get('/utils/brands', protect, admin, utilityController.getAllBrands);
+
+// Quotation Routes
+router.post('/quotations', protect, admin, quotationController.createQuotation);
+router.get('/quotations', protect, admin, quotationController.getAllQuotations);
+router.get('/quotations/:id', protect, admin, quotationController.getQuotationById);
+
+// Invoice Routes
+router.get('/invoices', protect, admin, invoiceController.getAllInvoices);
+router.post('/invoices/from-quotation', protect, admin, invoiceController.createInvoiceFromQuotation);
+router.post('/invoices/:id/payments', protect, admin, invoiceController.recordPayment);
+router.get('/invoices/:id', protect, admin, invoiceController.getInvoiceById);
+
+// Terbilang Routes
+router.get('/utils/terbilang', protect, admin, utilityController.getTerbilang);
 
 module.exports = router;

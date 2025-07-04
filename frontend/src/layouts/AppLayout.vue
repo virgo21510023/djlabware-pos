@@ -12,7 +12,7 @@
         <span class="text-2xl font-bold text-primary dark:text-dark-primary ml-2" :class="{ 'hidden': !isSidebarExpanded }">djlabware</span>
       </div>
 
-      <nav class="flex-grow flex flex-col">
+      <nav class="flex-grow flex flex-col overflow-y-auto pr-2">
         <RouterLink v-for="item in navItems" :key="item.name" :to="item.path"
           class="flex items-center px-4 py-3 mb-2 rounded-full hover:bg-primary/10 relative"
           :class="{ 
@@ -71,7 +71,9 @@ import {
   History as HistoryIcon, 
   FlaskConical,
   Truck,
-  ClipboardList
+  ClipboardList,
+  FileText,
+  FileCheck,
 } from 'lucide-vue-next';
 
 const isSidebarExpanded = ref(false);
@@ -88,6 +90,9 @@ const allNavItems = shallowRef([
   { name: 'Pembelian', path: '/purchasing', icon: Truck, admin: true },
   { name: 'Riwayat Pembelian', path: '/purchase-history', icon: ClipboardList, admin: true },
   { name: 'Riwayat', path: '/history', icon: HistoryIcon, admin: true },
+  { name: 'Buat Penawaran', path: '/quotations/new', icon: FileText, admin: true },
+  { name: 'Riwayat Penawaran', path: '/quotations', icon: ClipboardList, admin: true },
+  { name: 'Daftar Invoice', path: '/invoices', icon: FileCheck, admin: true },
   { name: 'Reports', path: '/reports', icon: BarChart2, admin: true },
   { name: 'Users', path: '/users', icon: Users, admin: true },
   { name: 'Settings', path: '/settings', icon: Settings, admin: true },
