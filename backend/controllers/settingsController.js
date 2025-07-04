@@ -1,29 +1,46 @@
 const { Setting } = require('../models');
 
-// Mengambil semua pengaturan
+/**
+ * Mengambil semua pengaturan dari database
+ */
 exports.getSettings = async (req, res) => {
   try {
     const settingsArray = await Setting.findAll();
-    // Ubah array menjadi objek agar mudah diakses di frontend
+    
+    // Ubah array dari database menjadi sebuah objek tunggal
+    // Contoh: [{key: 'store_name', value: 'Toko A'}] menjadi { store_name: 'Toko A' }
     const settingsObject = settingsArray.reduce((obj, item) => {
       obj[item.key] = item.value;
       return obj;
     }, {});
+
     res.json(settingsObject);
   } catch (error) {
-    res.status(500).json({ message: "Gagal mengambil pengaturan" });
+    res.status(500).json({ message: "Gagal mengambil pengaturan", error: error.message });
   }
 };
 
-// Memperbarui pengaturan
+/**
+ * Memperbarui atau membuat pengaturan baru
+ */
 exports.updateSettings = async (req, res) => {
-  const settings = req.body; // Menerima objek { key: value, ... }
+  // Menerima satu objek berisi semua pengaturan dari frontend
+  const settingsToUpdate = req.body; 
+  
   try {
-    for (const key in settings) {
-      await Setting.upsert({ key, value: settings[key] });
+    // Loop melalui setiap key di dalam objek
+    for (const key in settingsToUpdate) {
+      if (Object.hasOwnProperty.call(settingsToUpdate, key)) {
+        const value = settingsToUpdate[key];
+        
+        // Gunakan 'upsert': 
+        // - Jika key sudah ada, 'update' nilainya.
+        // - Jika key belum ada, 'insert' baris baru.
+        await Setting.upsert({ key, value });
+      }
     }
     res.json({ message: "Pengaturan berhasil diperbarui" });
   } catch (error) {
-    res.status(500).json({ message: "Gagal memperbarui pengaturan" });
+    res.status(500).json({ message: "Gagal memperbarui pengaturan", error: error.message });
   }
 };

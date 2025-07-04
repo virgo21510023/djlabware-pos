@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       InvoiceItem.belongsTo(models.Invoice, { foreignKey: 'invoice_id' });
       InvoiceItem.belongsTo(models.Product, { foreignKey: 'product_id' });
+      InvoiceItem.hasMany(models.DeliveryOrderItem, { foreignKey: 'invoice_item_id', as: 'shipments' });
     }
   }
   InvoiceItem.init({

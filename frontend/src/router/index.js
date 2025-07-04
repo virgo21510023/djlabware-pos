@@ -16,6 +16,7 @@ import CreateQuotation from '../views/CreateQuotation.vue';
 import QuotationHistory from '../views/QuotationHistory.vue';
 import InvoiceList from '../views/InvoiceList.vue';
 import InvoiceDetail from '../views/InvoiceDetail.vue';
+import DeliveryOrderDetail from '../views/DeliveryOrderDetail.vue';
 
 const routes = [
   {
@@ -41,6 +42,7 @@ const routes = [
       { path: 'quotations', name: 'Riwayat Penawaran', component: QuotationHistory, meta: { requiresAdmin: true } },
       { path: 'invoices', name: 'Daftar Invoice', component: InvoiceList, meta: { requiresAdmin: true } },
       { path: '/invoices/:id', name: 'Detail Invoice', component: InvoiceDetail, meta: { requiresAdmin: true } },
+      { path: '/delivery-order/:id/print', name: 'Cetak Surat Jalan', component: DeliveryOrderDetail, meta: { requiresAuth: true, isAdmin: true }},
     ]
   }
 ];

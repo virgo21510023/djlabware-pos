@@ -13,6 +13,7 @@ const purchaseController = require('../controllers/purchaseController');
 const utilityController = require('../controllers/utilityController');
 const quotationController = require('../controllers/quotationController');
 const invoiceController = require('../controllers/invoiceController');
+const deliveryOrderController = require('../controllers/deliveryOrderController');
 
 // Auth Routes
 router.post('/auth/login', authController.login);
@@ -70,5 +71,10 @@ router.get('/invoices/:id', protect, admin, invoiceController.getInvoiceById);
 
 // Terbilang Routes
 router.get('/utils/terbilang', protect, admin, utilityController.getTerbilang);
+
+// Delivery Order Routes
+router.post('/delivery-orders', protect, admin, deliveryOrderController.createDeliveryOrder);
+router.get('/invoices/:invoiceId/delivery-orders', protect, admin, deliveryOrderController.getDeliveryOrdersByInvoice);
+router.get('/delivery-orders/:id', protect, admin, deliveryOrderController.getDeliveryOrderById);
 
 module.exports = router;

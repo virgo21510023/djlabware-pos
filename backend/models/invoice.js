@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       Invoice.hasMany(models.InvoiceItem, { foreignKey: 'invoice_id', as: 'items' });
       Invoice.belongsTo(models.Quotation, { foreignKey: 'quotation_id' });
       Invoice.hasMany(models.Payment, { foreignKey: 'invoice_id', as: 'payments' });
+      Invoice.hasMany(models.DeliveryOrder, { foreignKey: 'invoice_id', as: 'delivery_orders' });
     }
   }
   Invoice.init({
