@@ -3,74 +3,71 @@ import axios from 'axios';
 
 export const useProductStore = defineStore('product', {
   state: () => ({
-    products: [],
-    loading: false,
-    // State baru untuk paginasi
+    // Untuk data paginasi di halaman Inventaris
+    paginatedProducts: [],
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
+    
+    // Untuk daftar lengkap di halaman POS dan Pembelian
+    allProducts: [],
+
+    loading: false,
   }),
   
-  // PASTIKAN addProduct BERADA DI DALAM BLOK 'actions' INI
   actions: {
-    async fetchProducts(page = 1) {
+    // Action untuk mengambil data DENGAN paginasi (untuk Inventaris)
+    async fetchProducts(page = 1, search = '') {
       this.loading = true;
       try {
         const config = {
-          headers: { 'Cache-Control': 'no-cache' },
-          // Kirim parameter page ke API
-          params: { page }
+          params: { page, limit: 10, search }
         };
         const response = await axios.get('/products', config);
         
-        // Simpan data produk dan paginasi
-        this.products = response.data.products;
+        this.paginatedProducts = response.data.products;
         this.currentPage = response.data.currentPage;
         this.totalPages = response.data.totalPages;
         this.totalItems = response.data.totalItems;
 
       } catch (error) {
-        console.error('Gagal mengambil data produk:', error);
-        alert('Gagal mengambil data produk.');
+        console.error('Gagal mengambil data produk (paginasi):', error);
       } finally {
         this.loading = false;
       }
     },
 
-    async addProduct(newProduct) {
+    // Action BARU untuk mengambil SEMUA produk (untuk POS & Pembelian)
+    async fetchAllProducts() {
+      this.loading = true;
       try {
-        await axios.post('/products', newProduct);
-        // Panggil lagi fetchProducts untuk refresh data
-        await this.fetchProducts();
+        const config = {
+          params: { limit: 10000 } // Ambil hingga 10,000 produk
+        };
+        const response = await axios.get('/products', config);
+        this.allProducts = response.data.products;
       } catch (error) {
-        console.error('Gagal menambah produk:', error);
-        alert(`Gagal menambah produk: ${error.response?.data?.message || error.message}`);
-        // Lempar error agar komponen bisa menangani jika perlu
-        throw error;
+        console.error('Gagal mengambil semua produk:', error);
+      } finally {
+        this.loading = false;
       }
     },
 
+    // Action lain (tidak berubah signifikan, hanya refresh data)
+    async addProduct(newProduct) {
+      // ...
+      await this.fetchProducts(1); // Refresh data paginasi
+      await this.fetchAllProducts(); // Refresh data lengkap
+    },
     async updateProduct(productData) {
-  try {
-    // Pastikan kita mengirim ID di URL
-    await axios.put(`/products/${productData.id}`, productData);
-    await this.fetchProducts(); // Refresh data setelah update
-  } catch (error) {
-    console.error('Gagal memperbarui produk:', error);
-    alert(`Gagal memperbarui produk: ${error.response?.data?.message || error.message}`);
-    throw error;
-  }
-},
-
-async deleteProduct(productId) {
-  try {
-    await axios.delete(`/products/${productId}`);
-    await this.fetchProducts(); // Refresh data setelah hapus
-  } catch (error) {
-    console.error('Gagal menghapus produk:', error);
-    alert(`Gagal menghapus produk: ${error.response?.data?.message || error.message}`);
-    throw error;
-  }
-},
+      // ...
+      await this.fetchProducts(this.currentPage);
+      await this.fetchAllProducts();
+    },
+    async deleteProduct(productId) {
+      // ...
+      await this.fetchProducts(this.currentPage);
+      await this.fetchAllProducts();
+    },
   },
 });

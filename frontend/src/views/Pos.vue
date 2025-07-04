@@ -81,21 +81,21 @@
       
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium">Nama Pelanggan</label>
-          <input v-model="paymentData.customer_name" type="text" placeholder="Nama Pelanggan (Opsional)" class="mt-1 w-full p-2 border rounded-md bg-background dark:bg-dark-background" />
+          <label for="customerNameModal" class="block text-sm font-medium">Nama Pelanggan</label>
+          <input v-model="paymentData.customer_name" id="customerNameModal" type="text" placeholder="Nama Pelanggan (Opsional)" class="mt-1 w-full p-2 border rounded-md bg-background dark:bg-dark-background" />
         </div>
 
         <div class="flex items-center justify-between p-3 bg-background dark:bg-dark-background rounded-lg">
-          <label for="is_dp" class="font-medium">Bayar DP (Uang Muka)?</label>
-          <button @click="paymentData.is_dp = !paymentData.is_dp" :class="paymentData.is_dp ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+          <label for="is_dp_toggle_modal" class="font-medium">Bayar DP (Uang Muka)?</label>
+          <button id="is_dp_toggle_modal" @click="paymentData.is_dp = !paymentData.is_dp" :class="paymentData.is_dp ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
             <span :class="paymentData.is_dp ? 'translate-x-6' : 'translate-x-1'" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"></span>
           </button>
         </div>
 
         <div v-if="paymentData.is_dp" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium">Jumlah DP</label>
-            <input v-model.number="paymentData.amount_paid" type="number" class="mt-1 w-full p-2 text-xl border rounded-md" ref="dpInputRef">
+            <label for="dpAmountModal" class="block text-sm font-medium">Jumlah DP</label>
+            <input v-model.number="paymentData.amount_paid" id="dpAmountModal" type="number" class="mt-1 w-full p-2 text-xl border rounded-md" ref="dpInputRef">
           </div>
           <div class="flex justify-between text-lg font-bold">
             <span>Sisa Tagihan:</span>
@@ -106,15 +106,36 @@
         <div v-else class="space-y-4">
           <div>
             <label class="block text-sm font-medium">Metode Pembayaran</label>
-            <select v-model="paymentData.payment_method" class="mt-1 w-full p-2 border rounded-md bg-background dark:bg-dark-background">
-              <option>Tunai</option>
-              <option>QRIS</option>
-              <option>Transfer</option>
-            </select>
+            <div class="mt-2 grid grid-cols-3 gap-2">
+              <button 
+                type="button" 
+                @click="paymentData.payment_method = 'Tunai'" 
+                :class="paymentData.payment_method === 'Tunai' ? 'bg-primary text-white ring-2 ring-primary' : 'bg-gray-200 dark:bg-gray-700'"
+                class="p-3 rounded-md font-semibold text-center transition-colors"
+              >
+                Tunai
+              </button>
+              <button 
+                type="button" 
+                @click="paymentData.payment_method = 'QRIS'"
+                :class="paymentData.payment_method === 'QRIS' ? 'bg-primary text-white ring-2 ring-primary' : 'bg-gray-200 dark:bg-gray-700'"
+                class="p-3 rounded-md font-semibold text-center transition-colors"
+              >
+                QRIS
+              </button>
+              <button 
+                type="button" 
+                @click="paymentData.payment_method = 'Transfer'"
+                :class="paymentData.payment_method === 'Transfer' ? 'bg-primary text-white ring-2 ring-primary' : 'bg-gray-200 dark:bg-gray-700'"
+                class="p-3 rounded-md font-semibold text-center transition-colors"
+              >
+                Transfer
+              </button>
+            </div>
           </div>
           <div v-if="paymentData.payment_method === 'Tunai'">
-            <label class="block text-sm font-medium">Uang Diterima</label>
-            <input v-model.number="cashReceived" type="number" class="mt-1 w-full p-2 text-xl border rounded-md" ref="cashInputRef">
+            <label for="cashModal" class="block text-sm font-medium">Uang Diterima</label>
+            <input v-model.number="cashReceived" id="cashModal" type="number" class="mt-1 w-full p-2 text-xl border rounded-md" ref="cashInputRef">
             <div class="mt-2 flex justify-between text-lg font-bold"><span>Kembalian:</span> <span>Rp {{ changeRupiah }}</span></div>
           </div>
         </div>
@@ -153,7 +174,7 @@ import Struk from '../components/Struk.vue';
 
 // Store & State
 const productStore = useProductStore();
-const { products, loading } = storeToRefs(productStore);
+const { allProducts: products, loading } = storeToRefs(productStore); // <-- Menggunakan allProducts
 
 const searchQuery = ref('');
 const cart = ref([]);
@@ -169,7 +190,7 @@ const paymentData = reactive({
   payment_method: 'Tunai',
   amount_paid: 0,
 });
-const cashReceived = ref(0); // Khusus untuk perhitungan kembalian
+const cashReceived = ref(0);
 const cashInputRef = ref(null);
 const dpInputRef = ref(null);
 
@@ -221,7 +242,7 @@ const formatRupiah = (number) => {
 
 // Lifecycle Hooks
 onMounted(async () => {
-  productStore.fetchProducts();
+  productStore.fetchAllProducts(); // <-- Mengambil semua produk
   try {
     const response = await axios.get('/settings');
     Object.assign(storeInfo, response.data);
@@ -259,13 +280,11 @@ function updateQuantity(item, amount) {
     }
   } else {
     alert(`Stok maksimal untuk ${item.name} adalah ${item.stock}.`);
-    item.quantity = item.stock;
   }
 }
 
 const openPaymentModal = () => {
   if (isCartEmpty.value) return;
-  // Reset state
   paymentData.customer_name = '';
   paymentData.is_dp = false;
   paymentData.payment_method = 'Tunai';
@@ -305,9 +324,8 @@ const processPayment = async () => {
     
     await printReceipt(response.data);
     
-    // Reset state setelah semua selesai
     cart.value = [];
-    await productStore.fetchProducts();
+    await productStore.fetchAllProducts();
   } catch (error) {
     alert(`Transaksi gagal: ${error.response?.data?.message || error.message}`);
   } finally {

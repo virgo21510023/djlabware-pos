@@ -9,6 +9,8 @@ const reportController = require('../controllers/reportController');
 const stockEntryController = require('../controllers/stockEntryController');
 const userController = require('../controllers/userController');
 const settingsController = require('../controllers/settingsController');
+const purchaseController = require('../controllers/purchaseController');
+const utilityController = require('../controllers/utilityController');
 
 // Auth Routes
 router.post('/auth/login', authController.login);
@@ -44,5 +46,12 @@ router.delete('/users/:id', protect, admin, userController.deleteUser);
 // Setting Routes
 router.get('/settings', protect, settingsController.getSettings);
 router.put('/settings', protect, admin, settingsController.updateSettings);
+
+// Purchase Routes
+router.post('/purchases', protect, admin, purchaseController.createPurchase);
+
+// Utility Routes
+router.get('/utils/categories', protect, admin, utilityController.getAllCategories);
+router.get('/utils/brands', protect, admin, utilityController.getAllBrands);
 
 module.exports = router;

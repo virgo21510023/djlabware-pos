@@ -3,7 +3,6 @@ const { Op } = require('sequelize');
 
 /**
  * Mengambil Laporan Penjualan berdasarkan rentang tanggal
- * Dihitung berdasarkan kapan transaksi DIBUAT (prinsip akrual)
  */
 exports.getSalesReport = async (req, res) => {
   try {
@@ -29,11 +28,12 @@ exports.getSalesReport = async (req, res) => {
       raw: true
     });
 
-    // 2. Ambil rincian jumlah transaksi per metode pembayaran
+    // 2. Ambil rincian jumlah dan total nominal per metode pembayaran
     const paymentMethodSummary = await Transaction.findAll({
       attributes: [
         'payment_method',
-        [sequelize.fn('COUNT', sequelize.col('payment_method')), 'count']
+        [sequelize.fn('COUNT', sequelize.col('payment_method')), 'count'],
+        [sequelize.fn('SUM', sequelize.col('amount_paid')), 'total_nominal']
       ],
       where: dateFilter,
       group: ['payment_method'],
@@ -48,17 +48,17 @@ exports.getSalesReport = async (req, res) => {
       totalOmzet,
       labaKotor,
       totalTransactions: parseInt(salesReport?.totalTransactions) || 0,
-      paymentMethodSummary // <-- Kirim data baru ini ke frontend
+      paymentMethodSummary
     });
 
   } catch (error) {
+    console.error("Error di getSalesReport:", error);
     res.status(500).json({ message: "Gagal mengambil data laporan", error: error.message });
   }
 };
 
 /**
  * Mengambil ringkasan data untuk halaman Dashboard
- * Dihitung berdasarkan UANG MASUK hari ini (prinsip kas)
  */
 exports.getDashboardSummary = async (req, res) => {
   try {
@@ -68,17 +68,14 @@ exports.getDashboardSummary = async (req, res) => {
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    // Menghitung total uang yang sudah dibayarkan hari ini
     const cashflowToday = await Transaction.sum('amount_paid', {
       where: {
-        // Filter berdasarkan kapan transaksi di-update (termasuk pelunasan)
         updatedAt: {
           [Op.between]: [todayStart, todayEnd]
         }
       }
     });
 
-    // Menghitung jumlah transaksi yang dibuat hari ini
     const totalTransactionsToday = await Transaction.count({
       where: {
         transaction_date: {
@@ -97,13 +94,14 @@ exports.getDashboardSummary = async (req, res) => {
     });
 
     res.json({
-      totalOmzetToday: parseFloat(cashflowToday) || 0, // Ini adalah arus kas masuk hari ini
+      totalOmzetToday: parseFloat(cashflowToday) || 0,
       totalTransactionsToday,
       recentProducts,
       criticalStockCount
     });
 
   } catch (error) {
+    console.error("Error di getDashboardSummary:", error);
     res.status(500).json({ message: "Gagal mengambil data dashboard", error: error.message });
   }
 };

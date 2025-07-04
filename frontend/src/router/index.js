@@ -5,6 +5,7 @@ import AppLayout from '../layouts/AppLayout.vue'
 import Login from '../views/Login.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Pos from '../views/Pos.vue'
+import Purchasing from '../views/Purchasing.vue';
 import Inventory from '../views/Inventory.vue'
 import History from '../views/History.vue';
 import Reports from '../views/Reports.vue';
@@ -24,6 +25,7 @@ const routes = [
     children: [
       { path: '', name: 'Dashboard', component: Dashboard },
       { path: 'pos', name: 'POS', component: Pos },
+      { path: 'purchasing', name: 'Pembelian', component: Purchasing, meta: { requiresAdmin: true } },
       { path: 'inventory', name: 'Inventory', component: Inventory, meta: { requiresAdmin: true } },
       { path: 'history', name: 'Riwayat', component: History, meta: { requiresAdmin: true } },
       { path: 'reports', name: 'Reports', component: Reports, meta: { requiresAdmin: true } },
