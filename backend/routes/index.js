@@ -49,7 +49,8 @@ router.put('/settings', protect, admin, settingsController.updateSettings);
 
 // Purchase Routes
 router.post('/purchases', protect, admin, purchaseController.createPurchase);
-
+router.get('/purchases', protect, admin, purchaseController.getAllPurchases);
+router.get('/purchases/:id', protect, admin, purchaseController.getPurchaseById);
 // Utility Routes
 router.get('/utils/categories', protect, admin, utilityController.getAllCategories);
 router.get('/utils/brands', protect, admin, utilityController.getAllBrands);

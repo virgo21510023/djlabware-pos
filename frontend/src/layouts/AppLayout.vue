@@ -61,7 +61,17 @@ import { ref, shallowRef, computed } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { 
-  LayoutDashboard, ShoppingCart, Package, BarChart2, Users, Settings, LogOut, History as HistoryIcon, FlaskConical, Truck 
+  LayoutDashboard, 
+  ShoppingCart, 
+  Package, 
+  BarChart2, 
+  Users, 
+  Settings, 
+  LogOut, 
+  History as HistoryIcon, 
+  FlaskConical,
+  Truck,
+  ClipboardList
 } from 'lucide-vue-next';
 
 const isSidebarExpanded = ref(false);
@@ -74,7 +84,9 @@ const userInitials = computed(() => {
 const allNavItems = shallowRef([
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
   { name: 'POS', path: '/pos', icon: ShoppingCart },
-  { name: 'Pembelian', path: '/purchasing', icon: Truck, admin: true },  { name: 'Inventory', path: '/inventory', icon: Package, admin: true },
+  { name: 'Inventory', path: '/inventory', icon: Package, admin: true },
+  { name: 'Pembelian', path: '/purchasing', icon: Truck, admin: true },
+  { name: 'Riwayat Pembelian', path: '/purchase-history', icon: ClipboardList, admin: true },
   { name: 'Riwayat', path: '/history', icon: HistoryIcon, admin: true },
   { name: 'Reports', path: '/reports', icon: BarChart2, admin: true },
   { name: 'Users', path: '/users', icon: Users, admin: true },

@@ -84,3 +84,57 @@ exports.createPurchase = async (req, res) => {
     res.status(500).json({ message: 'Gagal mencatat pembelian', error: error.message });
   }
 };
+
+// FUNGSI BARU: Mengambil semua nota pembelian (master)
+exports.getAllPurchases = async (req, res) => {
+  try {
+    const { search, startDate, endDate } = req.query;
+    let whereClause = {};
+
+    if (search) {
+      whereClause[Op.or] = [
+        { invoice_number: { [Op.like]: `%${search}%` } },
+        { supplier_name: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    if (startDate && endDate) {
+      whereClause.purchase_date = {
+        [Op.between]: [new Date(startDate), new Date(`${endDate}T23:59:59`)]
+      };
+    }
+
+    const purchases = await Purchase.findAll({
+      where: whereClause,
+      order: [['purchase_date', 'DESC']]
+    });
+    res.json(purchases);
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal mengambil riwayat pembelian.' });
+  }
+};
+
+// FUNGSI BARU: Mengambil detail item dari satu nota pembelian
+exports.getPurchaseById = async (req, res) => {
+  try {
+    const purchase = await Purchase.findByPk(req.params.id, {
+      // PERBAIKAN: Struktur 'include' yang benar untuk data bertingkat
+      include: [{
+        model: PurchaseItem,
+        include: [{
+          model: Product,
+          attributes: ['name', 'satuan'] // Ambil kolom yang diperlukan saja
+        }]
+      }]
+    });
+
+    if (purchase) {
+      res.json(purchase);
+    } else {
+      res.status(404).json({ message: 'Nota pembelian tidak ditemukan.' });
+    }
+  } catch (error) {
+    console.error("Error di getPurchaseById:", error);
+    res.status(500).json({ message: 'Gagal mengambil detail pembelian.' });
+  }
+};
