@@ -8,6 +8,7 @@ module.exports = (sequelize, DataTypes) => {
       Product.hasMany(models.QuotationItem, { foreignKey: 'product_id' });
       Product.hasMany(models.DeliveryOrderItem, { foreignKey: 'product_id' });
       Product.hasMany(models.SalesReturnItem, { foreignKey: 'product_id' });
+      Product.hasMany(models.PurchaseOrderItem, { foreignKey: 'product_id' });
     }
   }
   Product.init({
@@ -17,12 +18,12 @@ module.exports = (sequelize, DataTypes) => {
     stock: DataTypes.INTEGER,
     hpp: DataTypes.DECIMAL,
     sell_price: DataTypes.DECIMAL,
-    
+
     // Ini adalah kolom-kolom baru yang kita tambahkan
     satuan: DataTypes.STRING,
     merk: DataTypes.STRING,
-    kategori: DataTypes.STRING
-    
+    kategori: DataTypes.STRING,
+    status: DataTypes.STRING,
   }, {
     sequelize,
     modelName: 'Product',

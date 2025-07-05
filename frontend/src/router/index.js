@@ -17,6 +17,9 @@ import QuotationHistory from '../views/QuotationHistory.vue';
 import InvoiceList from '../views/InvoiceList.vue';
 import InvoiceDetail from '../views/InvoiceDetail.vue';
 import DeliveryOrderDetail from '../views/DeliveryOrderDetail.vue';
+import PurchaseOrderList from '../views/PurchaseOrderList.vue';
+import CreatePurchaseOrder from '../views/CreatePurchaseOrder.vue';
+import PurchaseOrderDetail from '../views/PurchaseOrderDetail.vue';
 
 const routes = [
   {
@@ -42,7 +45,10 @@ const routes = [
       { path: 'quotations', name: 'Riwayat Penawaran', component: QuotationHistory, meta: { requiresAdmin: true } },
       { path: 'invoices', name: 'Daftar Invoice', component: InvoiceList, meta: { requiresAdmin: true } },
       { path: '/invoices/:id', name: 'Detail Invoice', component: InvoiceDetail, meta: { requiresAdmin: true } },
-      { path: '/delivery-order/:id/print', name: 'Cetak Surat Jalan', component: DeliveryOrderDetail, meta: { requiresAuth: true, isAdmin: true }},
+      { path: '/delivery-order/:id/print', name: 'Cetak Surat Jalan', component: DeliveryOrderDetail, meta: { requiresAuth: true, isAdmin: true } },
+      { path: '/purchase-orders', name: 'Daftar Purchase Order', component: PurchaseOrderList, meta: { requiresAdmin: true } },
+      { path: '/purchase-orders/create', name: 'Buat Purchase Order', component: CreatePurchaseOrder, meta: { requiresAdmin: true } },
+      { path: '/purchase-orders/:id', name: 'Detail Purchase Order', component: PurchaseOrderDetail, meta: { requiresAdmin: true } },
     ]
   }
 ];

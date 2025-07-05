@@ -16,6 +16,7 @@ const invoiceController = require('../controllers/invoiceController');
 const deliveryOrderController = require('../controllers/deliveryOrderController');
 const upload = require('../middleware/uploadMiddleware');
 const returnController = require('../controllers/returnController');
+const purchaseOrderController = require('../controllers/purchaseOrderController');
 
 // Auth Routes
 router.post('/auth/login', authController.login);
@@ -83,5 +84,10 @@ router.get('/delivery-orders/:id', protect, admin, deliveryOrderController.getDe
 
 // Sales Return Routes
 router.post('/returns/sales', protect, admin, returnController.createSalesReturn);
+
+// Purchase Order Routes
+router.post('/purchase-orders', protect, admin, purchaseOrderController.createPurchaseOrder);
+router.get('/purchase-orders', protect, admin, purchaseOrderController.getAllPurchaseOrders);
+router.get('/purchase-orders/:id', protect, admin, purchaseOrderController.getPurchaseOrderById);
 
 module.exports = router;

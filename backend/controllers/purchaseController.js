@@ -1,34 +1,49 @@
-const { Purchase, PurchaseItem, Product, sequelize } = require('../models');
+const { Purchase, PurchaseItem, Product, PurchaseOrder, sequelize } = require('../models');
 
+/**
+ * Membuat data Pembelian baru, bisa dari PO atau manual
+ */
 exports.createPurchase = async (req, res) => {
-  console.log("--- [DEBUG] Menerima request createPurchase ---");
-  console.log("Payload diterima:", JSON.stringify(req.body, null, 2));
-  
   const t = await sequelize.transaction();
   try {
-    const { invoice_number, purchase_date, supplier_name, items } = req.body;
+    const { 
+      invoice_number, 
+      purchase_date, 
+      supplier_name, 
+      items,
+      purchase_order_id // Menerima ID PO jika ada
+    } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ message: "Harus ada setidaknya satu item." });
     }
 
-    const totalAmount = items.reduce((sum, item) => sum + ((item.quantity || 0) * (item.purchase_price || 0)), 0);
+    // Kalkulasi total pembelian
+    const subtotal = items.reduce((sum, item) => sum + (item.quantity_ordered * item.estimated_price), 0);
+    const discountAmount = subtotal * ((parseFloat(discount_percentage) || 0) / 100);
+    const subtotalAfterDiscount = subtotal - discountAmount;
+    const vatAmount = subtotalAfterDiscount * ((parseFloat(vat_percentage) || 0) / 100);
+    const grandTotal = subtotalAfterDiscount + vatAmount;
 
-    console.log("--- [DEBUG] 1. Mencoba membuat Purchase...");
-    const purchase = await Purchase.create({
-      invoice_number: invoice_number || `NOTA-${Date.now()}`,
-      purchase_date: purchase_date || new Date(),
-      supplier_name: supplier_name || 'N/A',
-      total_amount: totalAmount
+    // 1. Buat record Purchase utama
+    const purchaseOrder = await PurchaseOrder.create({
+      po_number: `PO-${Date.now()}`,
+      supplier_name,
+      order_date,
+      expected_delivery_date,
+      notes,
+      subtotal,
+      discount_percentage: parseFloat(discount_percentage) || 0,
+      vat_percentage: parseFloat(vat_percentage) || 0,
+      grand_total: grandTotal,
+      status: 'Dipesan'
     }, { transaction: t });
-    console.log("--- [DEBUG] 1. SUKSES membuat Purchase, ID:", purchase.id);
 
-    for (const [index, item] of items.entries()) {
-      console.log(`--- [DEBUG] 2. Memproses item #${index + 1}: ${item.name}`);
+    // 2. Proses setiap item
+    for (const item of items) {
       let product;
-
+      // Cek jika ini produk baru
       if (item.is_new) {
-        console.log("--- [DEBUG] 2a. Item adalah produk BARU. Mencoba Product.create...");
         product = await Product.create({
           name: item.name,
           sku: item.sku || `SKU-${Date.now()}`,
@@ -37,55 +52,58 @@ exports.createPurchase = async (req, res) => {
           sell_price: item.sell_price || 0,
           kategori: item.kategori || 'Lainnya',
           merk: item.merk || 'N/A',
-          satuan: item.satuan || 'Pcs'
+          satuan: item.satuan || 'Pcs',
+          status: 'listed' // Produk baru dari pembelian langsung di-list
         }, { transaction: t });
-        console.log(`--- [DEBUG] 2a. SUKSES Product.create, ID Produk Baru:`, product.id);
       } else {
-        console.log(`--- [DEBUG] 2a. Item adalah produk LAMA. Mencari produk ID: ${item.product_id}`);
         product = await Product.findByPk(item.product_id, { transaction: t });
-        console.log(`--- [DEBUG] 2a. SUKSES menemukan produk lama.`);
       }
 
-      if (!product) throw new Error(`Produk tidak valid untuk item: ${item.name}`);
+      if (!product) {
+        throw new Error(`Produk dengan ID ${item.product_id} tidak ditemukan.`);
+      }
       
-      console.log("--- [DEBUG] 2b. Mencoba PurchaseItem.create...");
+      // 3. Buat record PurchaseItem
       await PurchaseItem.create({
         purchase_id: purchase.id,
         product_id: product.id,
         quantity: item.quantity,
         purchase_price: item.purchase_price
       }, { transaction: t });
-      console.log("--- [DEBUG] 2b. SUKSES PurchaseItem.create.");
 
-      console.log(`--- [DEBUG] 2c. Mencoba menambah stok produk...`);
+      // 4. Update stok, HPP, dan harga jual produk
       await product.increment('stock', { by: item.quantity, transaction: t });
-      console.log("--- [DEBUG] 2c. SUKSES menambah stok.");
-      
       if(item.purchase_price > 0 && item.sell_price > 0) {
-         console.log(`--- [DEBUG] 2d. Mencoba update HPP & Harga Jual...`);
-         await product.update({
+        await product.update({
           hpp: item.purchase_price,
-          sell_price: item.sell_price
+          sell_price: item.sell_price,
+          status: 'listed' // Pastikan statusnya 'listed' saat barang masuk
         }, { transaction: t });
-         console.log(`--- [DEBUG] 2d. SUKSES update harga.`);
       }
     }
     
-    console.log("--- [DEBUG] 3. Mencoba COMMIT transaksi...");
+    // Jika pembelian ini dibuat dari sebuah PO, update status PO menjadi 'Selesai'
+    if (purchase_order_id) {
+      const po = await PurchaseOrder.findByPk(purchase_order_id, { transaction: t });
+      if (po) {
+        po.status = 'Selesai';
+        await po.save({ transaction: t });
+      }
+    }
+
     await t.commit();
-    console.log("--- [DEBUG] 3. SUKSES COMMIT.");
     res.status(201).json({ message: 'Pembelian berhasil dicatat.' });
 
   } catch (error) {
-    console.error("!!! ERROR KRITIS di createPurchase. Melakukan ROLLBACK... !!!");
-    console.error(error); // Ini akan mencetak detail error yang sebenarnya
     await t.rollback();
-    console.log("--- [DEBUG] Rollback selesai.");
     res.status(500).json({ message: 'Gagal mencatat pembelian', error: error.message });
   }
 };
 
-// FUNGSI BARU: Mengambil semua nota pembelian (master)
+
+/**
+ * Mengambil semua nota pembelian (untuk riwayat)
+ */
 exports.getAllPurchases = async (req, res) => {
   try {
     const { search, startDate, endDate } = req.query;
@@ -114,27 +132,25 @@ exports.getAllPurchases = async (req, res) => {
   }
 };
 
-// FUNGSI BARU: Mengambil detail item dari satu nota pembelian
+
+/**
+ * Mengambil detail satu nota pembelian
+ */
 exports.getPurchaseById = async (req, res) => {
   try {
     const purchase = await Purchase.findByPk(req.params.id, {
-      // PERBAIKAN: Struktur 'include' yang benar untuk data bertingkat
       include: [{
         model: PurchaseItem,
-        include: [{
-          model: Product,
-          attributes: ['name', 'satuan'] // Ambil kolom yang diperlukan saja
-        }]
+        as: 'items',
+        include: [{ model: Product }]
       }]
     });
-
     if (purchase) {
       res.json(purchase);
     } else {
       res.status(404).json({ message: 'Nota pembelian tidak ditemukan.' });
     }
   } catch (error) {
-    console.error("Error di getPurchaseById:", error);
     res.status(500).json({ message: 'Gagal mengambil detail pembelian.' });
   }
 };

@@ -1,23 +1,30 @@
 const { Product, Sequelize } = require('../models');
 const { Op } = Sequelize;
 
-// GET All Products
+/**
+ * Mengambil semua produk dengan paginasi dan pencarian
+ * HANYA akan mengambil produk dengan status 'listed'
+ */
 exports.getAllProducts = async (req, res) => {
-  // Ambil page dan limit dari query, beri nilai default
-  const { search, page = 1, limit = 10 } = req.query; 
+  const { search, page = 1, limit = 10 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   try {
-    const whereClause = search ? {
-      [Op.or]: [
+    // Kondisi filter dasar adalah status 'listed'
+    const whereClause = {
+      status: 'listed'
+    };
+
+    // Tambahkan kondisi pencarian jika ada
+    if (search) {
+      whereClause[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
         { sku: { [Op.like]: `%${search}%` } },
         { kategori: { [Op.like]: `%${search}%` } },
         { merk: { [Op.like]: `%${search}%` } }
-      ]
-    } : {};
+      ];
+    }
 
-    // Gunakan findAndCountAll untuk paginasi
     const { count, rows } = await Product.findAndCountAll({
       where: whereClause,
       limit: parseInt(limit),
@@ -36,18 +43,23 @@ exports.getAllProducts = async (req, res) => {
   }
 };
 
-
-// CREATE Product
+/**
+ * Membuat produk baru (dari menu inventaris)
+ * Otomatis akan berstatus 'listed'
+ */
 exports.createProduct = async (req, res) => {
   try {
-    const product = await Product.create(req.body);
+    const productData = { ...req.body, status: 'listed' }; // Pastikan statusnya 'listed'
+    const product = await Product.create(productData);
     res.status(201).json(product);
   } catch (error) {
     res.status(400).json({ message: "Gagal membuat produk", error: error.message });
   }
 };
 
-// UPDATE Product
+/**
+ * Memperbarui data produk
+ */
 exports.updateProduct = async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
@@ -62,7 +74,9 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
-// DELETE Product
+/**
+ * Menghapus produk
+ */
 exports.deleteProduct = async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);

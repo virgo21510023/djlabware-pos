@@ -85,6 +85,7 @@ const allNavItems = shallowRef([
   { name: 'POS', path: '/pos', icon: ShoppingCart },
   { name: 'Riwayat', path: '/history', icon: HistoryIcon, admin: true },
   { name: 'Inventory', path: '/inventory', icon: Package, admin: true },
+  { name: 'Purchase Order', path: '/purchase-orders', icon: ShoppingCart, admin: true },
   { name: 'Pembelian', path: '/purchasing', icon: Truck, admin: true },
   { name: 'Riwayat Pembelian', path: '/purchase-history', icon: ClipboardList, admin: true },
   { name: 'Buat Penawaran', path: '/quotations/new', icon: FileText, admin: true },
