@@ -128,6 +128,9 @@ import { storeToRefs } from 'pinia';
 import axios from 'axios';
 import { Plus, LogIn, Trash2 } from 'lucide-vue-next';
 import { debounce } from 'lodash-es';
+import { useToast } from "vue-toastification";
+
+const toast = useToast();
 
 // Setup Store
 const productStore = useProductStore();
@@ -196,18 +199,25 @@ const handleSaveProduct = async () => {
   try {
     if (isEditing.value) {
       await productStore.updateProduct(editableProduct);
+      toast.success(`Produk "${editableProduct.name}" berhasil diperbarui.`);
     } else {
       await productStore.addProduct(editableProduct);
+      toast.success(`Produk "${editableProduct.name}" berhasil ditambahkan.`);
     }
     closeProductModal();
-  } catch (error) { /* Error ditangani di store */ }
+  } catch (error) {
+    toast.error('Gagal menyimpan produk.');
+  }
 };
 
 const handleDeleteProduct = async (productId, productName) => {
   if (confirm(`Apakah Anda yakin ingin menghapus produk "${productName}"?`)) {
     try {
       await productStore.deleteProduct(productId);
-    } catch (error) { /* Error ditangani di store */ }
+      toast.success(`Produk "${productName}" berhasil dihapus.`);
+    } catch (error) {
+      toast.error('Gagal menghapus produk.');
+    }
   }
 };
 
@@ -223,17 +233,16 @@ const closeStockInModal = () => {
 
 const handleSaveStockIn = async () => {
   if (!stockInData.productId || !stockInData.quantity) {
-    alert('Produk dan jumlah harus diisi.');
+    toast.warning('Produk dan jumlah harus diisi.');
     return;
   }
   try {
     await axios.post('/stock-entries', stockInData);
-    alert('Stok berhasil dicatat!');
+    toast.success('Stok berhasil dicatat!');
     closeStockInModal();
-    // Refresh halaman saat ini setelah stok masuk
     await productStore.fetchProducts(currentPage.value, searchQuery.value);
   } catch (error) {
-    alert(`Gagal mencatat stok: ${error.response?.data?.message || error.message}`);
+    toast.error(`Gagal mencatat stok: ${error.response?.data?.message || error.message}`);
   }
 };
 </script>

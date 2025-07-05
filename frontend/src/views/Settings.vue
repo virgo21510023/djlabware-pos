@@ -93,6 +93,9 @@
 import { reactive, onMounted, ref, watch } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from '../stores/auth';
+import { useToast } from "vue-toastification";
+
+const toast = useToast();
 
 const authStore = useAuthStore();
 
@@ -140,9 +143,11 @@ onMounted(async () => {
 const saveSettings = async () => {
   try {
     await axios.put('/settings', settings);
-    alert('Pengaturan berhasil disimpan!');
+    // 3. Ganti alert dengan toast.success
+    toast.success('Pengaturan berhasil disimpan!');
   } catch (error) {
-    alert('Gagal menyimpan pengaturan.');
+    // 4. Ganti alert dengan toast.error
+    toast.error('Gagal menyimpan pengaturan.');
   }
 };
 </script>
