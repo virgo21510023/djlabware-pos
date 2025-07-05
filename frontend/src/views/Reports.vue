@@ -70,7 +70,9 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { Wallet, QrCode, Send, Landmark } from 'lucide-vue-next';
+import { useToast } from "vue-toastification";
 
+const toast = useToast();
 const startDate = ref('');
 const endDate = ref('');
 const reportData = ref(null);
@@ -123,7 +125,7 @@ const downloadCSV = () => {
 
 const fetchReport = async () => {
   if (!startDate.value || !endDate.value) {
-    alert('Harap pilih tanggal mulai dan tanggal selesai.');
+    toast.warning('Harap pilih tanggal mulai dan tanggal selesai.');
     return;
   }
   loading.value = true;
@@ -134,7 +136,7 @@ const fetchReport = async () => {
     });
     reportData.value = response.data;
   } catch (error) {
-    alert('Gagal mengambil data laporan.');
+    toast.error('Gagal mengambil data laporan.');
     console.error(error);
   } finally {
     loading.value = false;

@@ -104,7 +104,9 @@ import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { debounce } from 'lodash-es';
+import { useToast } from "vue-toastification";
 
+const toast = useToast();
 const productStore = useProductStore();
 const { allProducts } = storeToRefs(productStore);
 const router = useRouter();
@@ -206,23 +208,23 @@ const formatRupiah = (number) => Number(number || 0).toLocaleString('id-ID');
 const savePurchase = async () => {
   for (const item of purchase.items) {
     if (!item.name || !item.quantity || item.quantity <= 0 || item.purchase_price <= 0 || item.sell_price <= 0) {
-      alert('Harap isi semua kolom (Nama, Qty, Harga Beli, Harga Jual) dengan benar.');
+      toast.info('Harap isi semua kolom (Nama, Qty, Harga Beli, Harga Jual) dengan benar.');
       return;
     }
     if(item.is_new && (!item.kategori || !item.merk || !item.satuan)) {
-      alert('Untuk produk baru, harap isi juga Kategori, Merk, dan Satuan.');
+      toast.info('Untuk produk baru, harap isi juga Kategori, Merk, dan Satuan.');
       return;
     }
   }
 
   try {
     await axios.post('/purchases', purchase);
-    alert('Pembelian berhasil disimpan!');
+    toast.success('Pembelian berhasil disimpan!');
     await productStore.fetchAllProducts();
     await productStore.fetchProducts(1);
     router.push('/inventory');
   } catch (error) {
-    alert(`Gagal menyimpan: ${error.response?.data?.message || error.message}`);
+    toast.error(`Gagal menyimpan: ${error.response?.data?.message || error.message}`);
   }
 };
 </script>

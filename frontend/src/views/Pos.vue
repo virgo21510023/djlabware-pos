@@ -171,6 +171,9 @@ import { storeToRefs } from 'pinia';
 import axios from 'axios';
 import { Trash2, LoaderCircle } from 'lucide-vue-next';
 import Struk from '../components/Struk.vue';
+import { useToast } from "vue-toastification";
+
+const toast = useToast();
 
 // Store & State
 const productStore = useProductStore();
@@ -254,7 +257,7 @@ onMounted(async () => {
 // Methods
 function addToCart(product) {
   if (product.stock <= 0) {
-    alert("Stok produk habis!");
+    toast.warning("Stok produk habis!"); // <-- Ganti alert
     return;
   }
   const cartItem = cart.value.find(item => item.id === product.id);
@@ -262,7 +265,7 @@ function addToCart(product) {
     if (cartItem.quantity < product.stock) {
       cartItem.quantity++;
     } else {
-      alert(`Stok maksimal untuk ${product.name} telah tercapai.`);
+      toast.info(`Stok maksimal untuk ${product.name} telah tercapai.`); // <-- Ganti alert
     }
   } else {
     cart.value.push({ ...product, quantity: 1 });
@@ -279,7 +282,8 @@ function updateQuantity(item, amount) {
       cart.value.splice(itemIndex, 1);
     }
   } else {
-    alert(`Stok maksimal untuk ${item.name} adalah ${item.stock}.`);
+    toast.info(`Stok maksimal untuk ${item.name} adalah ${item.stock}.`); // <-- Ganti alert
+    item.quantity = item.stock;
   }
 }
 
@@ -321,13 +325,15 @@ const processPayment = async () => {
   try {
     const response = await axios.post('/transactions', payload);
     isPaymentModalOpen.value = false;
+    toast.success('Transaksi berhasil!'); // <-- Ganti alert
     
     await printReceipt(response.data);
     
+    // Reset state setelah semua selesai
     cart.value = [];
     await productStore.fetchAllProducts();
   } catch (error) {
-    alert(`Transaksi gagal: ${error.response?.data?.message || error.message}`);
+    toast.error(`Transaksi gagal: ${error.response?.data?.message || error.message}`); // <-- Ganti alert
   } finally {
     paymentLoading.value = false;
   }

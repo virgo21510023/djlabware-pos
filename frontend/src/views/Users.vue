@@ -63,7 +63,9 @@
 import { ref, reactive, onMounted } from 'vue';
 import axios from 'axios';
 import { UserPlus } from 'lucide-vue-next';
+import { useToast } from "vue-toastification";
 
+const toast = useToast();
 const users = ref([]);
 const loading = ref(false);
 const isModalOpen = ref(false);
@@ -79,7 +81,7 @@ const fetchUsers = async () => {
     const response = await axios.get('/users');
     users.value = response.data;
   } catch (error) {
-    alert('Gagal mengambil data pengguna.');
+    toast.error('Gagal mengambil data pengguna.');
   } finally {
     loading.value = false;
   }
@@ -99,8 +101,9 @@ const handleSave = async () => {
     await axios.post('/users', newUser);
     closeModal();
     fetchUsers(); // Refresh daftar pengguna
+    toast.success('User berhasil ditambahkan');
   } catch (error) {
-    alert(`Gagal menyimpan: ${error.response?.data?.message || error.message}`);
+    toast.error(`Gagal menyimpan: ${error.response?.data?.message || error.message}`);
   }
 };
 
@@ -109,8 +112,9 @@ const handleDelete = async (userId, userName) => {
     try {
       await axios.delete(`/users/${userId}`);
       fetchUsers(); // Refresh daftar pengguna
+      toast.success('User berhasil dihapus');
     } catch (error) {
-      alert(`Gagal menghapus: ${error.response?.data?.message || error.message}`);
+      toast.error(`Gagal menghapus: ${error.response?.data?.message || error.message}`);
     }
   }
 };

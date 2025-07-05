@@ -121,7 +121,9 @@ import { format } from 'date-fns';
 import { id } from 'date-fns/locale/id';
 import Struk from '../components/Struk.vue';
 import { debounce } from 'lodash-es';
+import { useToast } from "vue-toastification";
 
+const toast = useToast();
 const transactions = ref([]);
 const loading = ref(false);
 const searchQuery = ref('');
@@ -154,7 +156,7 @@ const fetchTransactions = async () => {
     const response = await axios.get('/transactions', { params });
     transactions.value = response.data;
   } catch (error) {
-    alert('Gagal mengambil riwayat transaksi.');
+    toast.error('Gagal mengambil riwayat transaksi.');
   } finally {
     loading.value = false;
   }
@@ -194,7 +196,7 @@ const fetchTransactionDetail = async (transactionId) => {
     const response = await axios.get(`/transactions/${transactionId}`);
     return response.data;
   } catch (error) {
-    alert('Gagal mengambil detail transaksi.');
+    toast.error('Gagal mengambil detail transaksi.');
     return null;
   }
 };
@@ -232,7 +234,7 @@ const handleSettlePayment = async () => {
     isSettleModalOpen.value = false;
     fetchTransactions();
   } catch (error) {
-    alert('Gagal melunasi transaksi.');
+    toast.error('Gagal melunasi transaksi.');
   }
 };
 </script>

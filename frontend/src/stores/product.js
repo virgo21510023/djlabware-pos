@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
+import { useToast } from "vue-toastification";
+
+const toast = useToast();
 
 export const useProductStore = defineStore('product', {
   state: () => ({
@@ -31,7 +34,7 @@ export const useProductStore = defineStore('product', {
         this.totalItems = response.data.totalItems;
 
       } catch (error) {
-        console.error('Gagal mengambil data produk (paginasi):', error);
+        toast.error('Gagal mengambil data produk (paginasi):', error);
       } finally {
         this.loading = false;
       }
@@ -47,7 +50,7 @@ export const useProductStore = defineStore('product', {
         const response = await axios.get('/products', config);
         this.allProducts = response.data.products;
       } catch (error) {
-        console.error('Gagal mengambil semua produk:', error);
+        toast.error('Gagal mengambil semua produk:', error);
       } finally {
         this.loading = false;
       }

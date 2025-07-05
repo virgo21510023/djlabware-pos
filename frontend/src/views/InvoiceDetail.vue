@@ -23,11 +23,17 @@
     <div v-if="loading" class="text-center p-10">Memuat data invoice...</div>
     <div v-else-if="invoice" id="printable-invoice"
       class="bg-white p-8 max-w-4xl mx-auto shadow-lg text-black flex flex-col">
-      <div class="text-center mb-6">
-        <h1 class="text-3xl font-bold text-black">{{ storeInfo.store_name || 'DJLABWARE' }}</h1>
-        <p class="text-sm text-gray-600">{{ storeInfo.store_address }}</p>
-        <p class="text-sm text-gray-600">{{ storeInfo.store_phone }}</p>
+      <div class="flex justify-between items-center mb-6">
+        <div class="w-32">
+          <img v-if="storeInfo.store_logo" :src="backendUrl + storeInfo.store_logo" alt="Logo Toko" class="max-h-20">
+        </div>
+        <div class="text-right">
+          <h1 class="text-2xl font-bold text-black">{{ storeInfo.store_name || 'DJLABWARE' }}</h1>
+          <p class="text-xs text-gray-600">{{ storeInfo.store_address }}</p>
+          <p class="text-xs text-gray-600">{{ storeInfo.store_phone }}</p>
+        </div>
       </div>
+      <hr class="mb-6 border-gray-400">
       <hr class="mb-6 border-gray-400">
 
       <div class="grid grid-cols-2 gap-4 mb-6">
@@ -85,9 +91,11 @@
                 class="font-medium">Diskon ({{ invoice.discount_percentage }}%)</span> <span>-{{
                   formatRupiah(invoice.subtotal * invoice.discount_percentage / 100) }}</span></div>
             <div v-if="invoice.shipping_cost > 0" class="flex justify-between"><span class="font-medium">Ongkir</span>
-              <span>{{ formatRupiah(invoice.shipping_cost) }}</span></div>
+              <span>{{ formatRupiah(invoice.shipping_cost) }}</span>
+            </div>
             <div v-if="invoice.vat_amount > 0" class="flex justify-between"><span class="font-medium">PPN (11%)</span>
-              <span>{{ formatRupiah(invoice.vat_amount) }}</span></div>
+              <span>{{ formatRupiah(invoice.vat_amount) }}</span>
+            </div>
             <hr class="my-2 border-black">
             <div class="flex justify-between font-bold text-lg"><span class="">GRAND TOTAL</span> <span>{{
               formatRupiah(invoice.grand_total) }}</span></div>
@@ -232,9 +240,13 @@ import { id } from 'date-fns/locale/id';
 import { ArrowLeft, Printer, DollarSign, Download, Truck } from 'lucide-vue-next';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useToast } from "vue-toastification";
 
+const toast = useToast();
 const route = useRoute();
 const router = useRouter();
+
+const backendUrl = 'http://localhost:5000';
 
 const invoice = ref(null);
 const loading = ref(true);
@@ -295,7 +307,7 @@ const fetchInvoiceDetail = async () => {
     }
   } catch (error) {
     console.error("Gagal memuat detail invoice:", error);
-    alert("Gagal memuat detail invoice.");
+    toast.error("Gagal memuat detail invoice.");
   } finally {
     loading.value = false;
   }
@@ -325,7 +337,7 @@ const downloadPDF = () => {
       isGeneratingPDF.value = false;
     }).catch(err => {
       console.error("Gagal membuat PDF:", err);
-      alert("Gagal membuat PDF.");
+      toast.error("Gagal membuat PDF.");
       isGeneratingPDF.value = false;
     });
 };
@@ -339,20 +351,20 @@ const openPaymentModal = () => {
 
 const handleRecordPayment = async () => {
   if (!paymentAmount.value || paymentAmount.value <= 0) {
-    return alert("Jumlah pembayaran harus lebih dari 0.");
+    return toast.info("Jumlah pembayaran harus lebih dari 0.");
   }
   if (paymentAmount.value > parseFloat(invoice.value.amount_due) + 0.01) {
-    return alert("Jumlah bayar melebihi sisa tagihan.");
+    return toast.error("Jumlah bayar melebihi sisa tagihan.");
   }
   try {
     await axios.post(`/invoices/${invoice.value.id}/payments`, {
       amount: paymentAmount.value
     });
-    alert('Pembayaran berhasil dicatat!');
+    toast.success('Pembayaran berhasil dicatat!');
     isPaymentModalOpen.value = false;
     fetchInvoiceDetail();
   } catch (error) {
-    alert('Gagal mencatat pembayaran.');
+    toast.error('Gagal mencatat pembayaran.');
   }
 };
 
@@ -384,14 +396,14 @@ const handleCreateDo = async () => {
     const payload = { ...newDoData };
     payload.items_to_ship = payload.items_to_ship.filter(item => item.quantity_shipped > 0);
     if (payload.items_to_ship.length === 0) {
-      return alert('Harap isi jumlah barang yang akan dikirim.');
+      return toast.warning('Harap isi jumlah barang yang akan dikirim.');
     }
     await axios.post('/delivery-orders', payload);
-    alert('Surat Jalan berhasil dibuat!');
+    toast.success('Surat Jalan berhasil dibuat!');
     isDoModalOpen.value = false;
     fetchInvoiceDetail();
   } catch (error) {
-    alert('Gagal membuat Surat Jalan.');
+    toast.error('Gagal membuat Surat Jalan.');
   }
 };
 </script>

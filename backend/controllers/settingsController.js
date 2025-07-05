@@ -44,3 +44,23 @@ exports.updateSettings = async (req, res) => {
     res.status(500).json({ message: "Gagal memperbarui pengaturan", error: error.message });
   }
 };
+
+/**
+ * Menangani unggahan logo
+ */
+exports.uploadLogo = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Tidak ada file yang diunggah.' });
+    }
+
+    // Simpan path file ke database
+    const logoPath = `/uploads/${req.file.filename}`;
+    await Setting.upsert({ key: 'store_logo', value: logoPath });
+
+    res.json({ message: 'Logo berhasil diunggah', filePath: logoPath });
+
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal mengunggah logo', error: error.message });
+  }
+};

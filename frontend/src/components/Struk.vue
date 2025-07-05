@@ -1,6 +1,7 @@
 <template>
   <div class="struk-container">
     <div class="text-center">
+      <img v-if="storeInfo.store_logo" :src="backendUrl + storeInfo.store_logo" alt="Logo Toko" class="max-h-20">
       <h2 class="text-xl font-bold">{{ storeInfo.store_name || 'djlabware POS' }}</h2>
       <p class="text-xs">{{ storeInfo.store_address || 'Alamat Toko Anda' }}</p>
       <p class="text-xs">{{ storeInfo.store_phone || 'Kontak Toko Anda' }}</p>
@@ -62,6 +63,8 @@ defineProps({
   transaction: Object,
   storeInfo: Object
 });
+
+const backendUrl = 'http://localhost:5000';
 
 const formatRupiah = (number) => Number(number ? number : 0).toLocaleString('id-ID');
 const formatTanggal = (dateString) => {

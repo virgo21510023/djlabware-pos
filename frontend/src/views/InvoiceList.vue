@@ -48,7 +48,9 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale/id';
 import { useRouter } from 'vue-router';
+import { useToast } from "vue-toastification";
 
+const toast = useToast();
 const router = useRouter();
 const invoices = ref([]);
 const loading = ref(false);
@@ -59,7 +61,7 @@ const fetchInvoices = async () => {
     const res = await axios.get('/invoices');
     invoices.value = res.data;
   } catch (error) {
-    alert('Gagal mengambil daftar invoice');
+    toast.error('Gagal mengambil daftar invoice');
   } finally {
     loading.value = false;
   }

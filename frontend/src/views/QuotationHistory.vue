@@ -77,7 +77,9 @@ import { id } from 'date-fns/locale/id';
 import { debounce } from 'lodash-es';
 import { ChevronRight } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
+import { useToast } from "vue-toastification";
 
+const toast = useToast();
 const router = useRouter();
 const quotations = ref([]);
 const loading = ref(false);
@@ -115,7 +117,7 @@ const fetchQuotations = async () => {
     const response = await axios.get('/quotations', { params });
     quotations.value = response.data.map(q => ({ ...q, detailLoading: false }));
   } catch (error) {
-    alert('Gagal mengambil riwayat penawaran.');
+    toast.error('Gagal mengambil riwayat penawaran.');
   } finally {
     loading.value = false;
   }
@@ -141,7 +143,7 @@ const toggleDetails = async (quote) => {
         const response = await axios.get(`/quotations/${quote.id}`);
         quotations.value[index] = { ...response.data, detailLoading: false };
       } catch (error) {
-        alert('Gagal mengambil detail item.');
+        toast.error('Gagal mengambil detail item.');
         quotations.value[index].detailLoading = false;
       }
     }
@@ -152,10 +154,10 @@ const createInvoice = async (quotationId) => {
   if (confirm('Apakah Anda yakin ingin membuat Invoice dari penawaran ini? Aksi ini akan memotong stok.')) {
     try {
       const response = await axios.post('/invoices/from-quotation', { quotationId });
-      alert(`Invoice ${response.data.invoice_number} berhasil dibuat!`);
+      toast.success(`Invoice ${response.data.invoice_number} berhasil dibuat!`);
       router.push('/invoices');
     } catch (error) {
-      alert(`Gagal membuat invoice: ${error.response?.data?.message || 'Error tidak diketahui'}`);
+      toast.error(`Gagal membuat invoice: ${error.response?.data?.message || 'Error tidak diketahui'}`);
     }
   }
 };

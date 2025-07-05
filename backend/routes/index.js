@@ -14,6 +14,7 @@ const utilityController = require('../controllers/utilityController');
 const quotationController = require('../controllers/quotationController');
 const invoiceController = require('../controllers/invoiceController');
 const deliveryOrderController = require('../controllers/deliveryOrderController');
+const upload = require('../middleware/uploadMiddleware');
 
 // Auth Routes
 router.post('/auth/login', authController.login);
@@ -49,11 +50,13 @@ router.delete('/users/:id', protect, admin, userController.deleteUser);
 // Setting Routes
 router.get('/settings', protect, settingsController.getSettings);
 router.put('/settings', protect, admin, settingsController.updateSettings);
+router.post('/settings/upload-logo', protect, admin, upload.single('logo'), settingsController.uploadLogo);
 
 // Purchase Routes
 router.post('/purchases', protect, admin, purchaseController.createPurchase);
 router.get('/purchases', protect, admin, purchaseController.getAllPurchases);
 router.get('/purchases/:id', protect, admin, purchaseController.getPurchaseById);
+
 // Utility Routes
 router.get('/utils/categories', protect, admin, utilityController.getAllCategories);
 router.get('/utils/brands', protect, admin, utilityController.getAllBrands);

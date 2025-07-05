@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
 import router from '../router';
+import { useToast } from "vue-toastification";
+
+const toast = useToast();
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -30,7 +33,7 @@ export const useAuthStore = defineStore('auth', {
         router.push('/');
       } catch (error) {
         console.error('Login failed:', error);
-        alert('Login Gagal! Periksa kembali username dan password.');
+        toast.error('Login Gagal! Periksa kembali username dan password.');
       }
     },
 

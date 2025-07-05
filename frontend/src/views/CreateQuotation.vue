@@ -138,7 +138,9 @@ import { storeToRefs } from 'pinia';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { debounce } from 'lodash-es';
+import { useToast } from "vue-toastification";
 
+const toast = useToast();
 const productStore = useProductStore();
 const { allProducts } = storeToRefs(productStore);
 const router = useRouter();
@@ -250,10 +252,10 @@ const saveQuotation = async () => {
   try {
     const payload = { ...quotation };
     await axios.post('/quotations', payload);
-    alert('Penawaran berhasil disimpan!');
+    toast.success('Penawaran berhasil disimpan!');
     router.push('/quotations');
   } catch (error) {
-    alert(`Gagal menyimpan: ${error.response?.data?.message || error.message}`);
+    toast.error(`Gagal menyimpan: ${error.response?.data?.message || error.message}`);
   }
 };
 
