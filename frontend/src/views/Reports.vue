@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1 class="text-3xl font-bold text-on-surface dark:text-dark-on-surface">Laporan Bisnis</h1>
-    <p class="mt-2 text-secondary dark:text-dark-secondary">Analisis performa penjualan dalam rentang waktu tertentu.</p>
+    <p class="mt-2 text-secondary dark:text-dark-secondary">Analisis performa penjualan setelah dikurangi retur.</p>
 
     <div class="mt-6 bg-surface dark:bg-dark-surface p-4 rounded-lg shadow">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
@@ -26,11 +26,11 @@
     <div v-else-if="reportData" class="mt-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="bg-surface dark:bg-dark-surface p-6 rounded-lg shadow">
-          <h2 class="text-sm font-medium text-secondary dark:text-dark-secondary">TOTAL OMZET (PENJUALAN)</h2>
+          <h2 class="text-sm font-medium text-secondary dark:text-dark-secondary">OMZET BERSIH</h2>
           <p class="text-3xl font-bold mt-2 text-green-500">Rp {{ formatRupiah(reportData.totalOmzet) }}</p>
         </div>
         <div class="bg-surface dark:bg-dark-surface p-6 rounded-lg shadow">
-          <h2 class="text-sm font-medium text-secondary dark:text-dark-secondary">LABA KOTOR</h2>
+          <h2 class="text-sm font-medium text-secondary dark:text-dark-secondary">LABA KOTOR BERSIH</h2>
           <p class="text-3xl font-bold mt-2 text-blue-500">Rp {{ formatRupiah(reportData.labaKotor) }}</p>
         </div>
         <div class="bg-surface dark:bg-dark-surface p-6 rounded-lg shadow">
@@ -40,24 +40,12 @@
       </div>
 
       <div class="mt-8">
-        <h3 class="text-lg font-bold mb-4">Rincian per Metode Pembayaran</h3>
-        <div v-if="reportData.paymentMethodSummary.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div 
-            v-for="item in reportData.paymentMethodSummary" 
-            :key="item.payment_method" 
-            class="bg-surface dark:bg-dark-surface p-4 rounded-lg shadow border-l-4"
-            :class="getPaymentMethodStyle(item.payment_method).borderColor"
-          >
-            <div class="flex items-center mb-2">
-              <component :is="getPaymentMethodStyle(item.payment_method).icon" :class="getPaymentMethodStyle(item.payment_method).textColor" class="w-6 h-6 mr-3"/>
-              <h4 class="text-sm font-bold uppercase">{{ item.payment_method }}</h4>
-            </div>
-            <p class="text-2xl font-bold mt-2">Rp {{ formatRupiah(item.total_nominal) }}</p>
-            <p class="text-sm text-secondary dark:text-dark-secondary mt-1">{{ item.count }} Transaksi</p>
+        <h3 class="text-lg font-bold mb-4">Rincian Retur</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-red-50 dark:bg-red-900/50 p-6 rounded-lg shadow">
+            <h2 class="text-sm font-medium text-red-800 dark:text-red-200">TOTAL NILAI RETUR</h2>
+            <p class="text-2xl font-bold mt-2 text-red-600 dark:text-red-300">- Rp {{ formatRupiah(reportData.totalRefund) }}</p>
           </div>
-        </div>
-        <div v-else class="bg-surface dark:bg-dark-surface p-6 rounded-lg shadow">
-            <p class="text-secondary">Tidak ada data untuk ditampilkan.</p>
         </div>
       </div>
     </div>
@@ -69,7 +57,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import { Wallet, QrCode, Send, Landmark } from 'lucide-vue-next';
 import { useToast } from "vue-toastification";
 
 const toast = useToast();
@@ -83,36 +70,17 @@ const formatRupiah = (number) => {
   return Number(number).toLocaleString('id-ID');
 };
 
-const getPaymentMethodStyle = (method) => {
-  switch (method?.toLowerCase()) {
-    case 'tunai':
-      return { icon: Wallet, borderColor: 'border-blue-500', textColor: 'text-blue-500' };
-    case 'qris':
-      return { icon: QrCode, borderColor: 'border-purple-500', textColor: 'text-purple-500' };
-    case 'transfer':
-      return { icon: Send, borderColor: 'border-orange-500', textColor: 'text-orange-500' };
-    case 'dp':
-      return { icon: Landmark, borderColor: 'border-teal-500', textColor: 'text-teal-500' };
-    default:
-      return { icon: Wallet, borderColor: 'border-gray-500', textColor: 'text-gray-500' };
-  }
-};
-
 const downloadCSV = () => {
   if (!reportData.value) return;
 
-  const { totalOmzet, labaKotor, totalTransactions, paymentMethodSummary } = reportData.value;
+  const { totalOmzet, labaKotor, totalTransactions, totalRefund } = reportData.value;
   let csvContent = "data:text/csv;charset=utf-8,";
   
   csvContent += "Metrik,Jumlah\r\n";
-  csvContent += `Total Omzet,${totalOmzet}\r\n`;
-  csvContent += `Laba Kotor,${labaKotor}\r\n`;
+  csvContent += `Omzet Bersih,${totalOmzet}\r\n`;
+  csvContent += `Laba Kotor Bersih,${labaKotor}\r\n`;
   csvContent += `Total Transaksi,${totalTransactions}\r\n`;
-  csvContent += "\r\n";
-  csvContent += "Metode Pembayaran,Jumlah Transaksi,Total Nominal\r\n";
-  paymentMethodSummary.forEach(item => {
-    csvContent += `${item.payment_method},${item.count},${item.total_nominal}\r\n`;
-  });
+  csvContent += `Total Nilai Retur,${totalRefund}\r\n`;
 
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
@@ -125,8 +93,7 @@ const downloadCSV = () => {
 
 const fetchReport = async () => {
   if (!startDate.value || !endDate.value) {
-    toast.warning('Harap pilih tanggal mulai dan tanggal selesai.');
-    return;
+    return toast.warning('Harap pilih tanggal mulai dan tanggal selesai.');
   }
   loading.value = true;
   reportData.value = null; 

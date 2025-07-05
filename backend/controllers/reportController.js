@@ -1,4 +1,4 @@
-const { Transaction, Product, sequelize } = require('../models');
+const { Transaction, Product, SalesReturn, SalesReturnItem, sequelize } = require('../models');
 const { Op } = require('sequelize');
 
 /**
@@ -16,38 +16,68 @@ exports.getSalesReport = async (req, res) => {
         [Op.between]: [new Date(startDate), new Date(`${endDate}T23:59:59`)]
       }
     };
+    
+    const returnDateFilter = {
+      return_date: {
+        [Op.between]: [new Date(startDate), new Date(`${endDate}T23:59:59`)]
+      }
+    };
 
-    // 1. Ambil data utama (Omzet, HPP, Total Transaksi)
     const salesReport = await Transaction.findOne({
       attributes: [
-        [sequelize.fn('SUM', sequelize.col('total_amount')), 'totalOmzet'],
-        [sequelize.fn('SUM', sequelize.col('total_hpp')), 'totalHpp'],
+        [sequelize.fn('SUM', sequelize.col('total_amount')), 'grossOmzet'],
+        [sequelize.fn('SUM', sequelize.col('total_hpp')), 'grossHpp'],
         [sequelize.fn('COUNT', sequelize.col('id')), 'totalTransactions']
       ],
       where: dateFilter,
       raw: true
     });
 
-    // 2. Ambil rincian jumlah dan total nominal per metode pembayaran
+    const returns = await SalesReturn.findAll({
+      where: returnDateFilter,
+      include: [{
+        model: SalesReturnItem,
+        as: 'items',
+        include: [{ model: Product, attributes: ['hpp'] }]
+      }]
+    });
+
+    let totalRefund = 0;
+    let totalHppReturned = 0;
+    returns.forEach(ret => {
+      totalRefund += parseFloat(ret.total_refund_amount);
+      ret.items.forEach(item => {
+        totalHppReturned += item.quantity_returned * (item.Product?.hpp || 0);
+      });
+    });
+
+    const grossOmzet = parseFloat(salesReport?.grossOmzet) || 0;
+    const grossHpp = parseFloat(salesReport?.grossHpp) || 0;
+
+    const netOmzet = grossOmzet - totalRefund;
+    const netHpp = grossHpp - totalHppReturned;
+    const netLabaKotor = netOmzet - netHpp;
+
     const paymentMethodSummary = await Transaction.findAll({
       attributes: [
         'payment_method',
         [sequelize.fn('COUNT', sequelize.col('payment_method')), 'count'],
         [sequelize.fn('SUM', sequelize.col('amount_paid')), 'total_nominal']
       ],
-      where: dateFilter,
+      where: {
+        updatedAt: {
+          [Op.between]: [new Date(startDate), new Date(`${endDate}T23:59:59`)]
+        }
+      },
       group: ['payment_method'],
       raw: true
     });
 
-    const totalOmzet = parseFloat(salesReport?.totalOmzet) || 0;
-    const totalHpp = parseFloat(salesReport?.totalHpp) || 0;
-    const labaKotor = totalOmzet - totalHpp;
-
     res.json({
-      totalOmzet,
-      labaKotor,
+      totalOmzet: netOmzet,
+      labaKotor: netLabaKotor,
       totalTransactions: parseInt(salesReport?.totalTransactions) || 0,
+      totalRefund: totalRefund,
       paymentMethodSummary
     });
 
@@ -70,17 +100,13 @@ exports.getDashboardSummary = async (req, res) => {
 
     const cashflowToday = await Transaction.sum('amount_paid', {
       where: {
-        updatedAt: {
-          [Op.between]: [todayStart, todayEnd]
-        }
+        updatedAt: { [Op.between]: [todayStart, todayEnd] }
       }
     });
 
     const totalTransactionsToday = await Transaction.count({
       where: {
-        transaction_date: {
-          [Op.between]: [todayStart, todayEnd]
-        }
+        transaction_date: { [Op.between]: [todayStart, todayEnd] }
       }
     });
 

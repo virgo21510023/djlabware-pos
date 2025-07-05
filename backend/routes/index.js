@@ -15,6 +15,7 @@ const quotationController = require('../controllers/quotationController');
 const invoiceController = require('../controllers/invoiceController');
 const deliveryOrderController = require('../controllers/deliveryOrderController');
 const upload = require('../middleware/uploadMiddleware');
+const returnController = require('../controllers/returnController');
 
 // Auth Routes
 router.post('/auth/login', authController.login);
@@ -79,5 +80,8 @@ router.get('/utils/terbilang', protect, admin, utilityController.getTerbilang);
 router.post('/delivery-orders', protect, admin, deliveryOrderController.createDeliveryOrder);
 router.get('/invoices/:invoiceId/delivery-orders', protect, admin, deliveryOrderController.getDeliveryOrdersByInvoice);
 router.get('/delivery-orders/:id', protect, admin, deliveryOrderController.getDeliveryOrderById);
+
+// Sales Return Routes
+router.post('/returns/sales', protect, admin, returnController.createSalesReturn);
 
 module.exports = router;

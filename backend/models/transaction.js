@@ -7,6 +7,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       Transaction.belongsTo(models.User, { foreignKey: 'user_id' });
       Transaction.hasMany(models.TransactionItem, { foreignKey: 'transaction_id' });
+      Transaction.hasMany(models.SalesReturn, { foreignKey: 'transaction_id', as: 'returns' });
     }
   }
   Transaction.init({
@@ -19,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
     transaction_date: DataTypes.DATE,
     customer_name: DataTypes.STRING,
     amount_paid: DataTypes.DECIMAL,
-    remaining_amount: DataTypes.DECIMAL
+    remaining_amount: DataTypes.DECIMAL,
   }, {
     sequelize,
     modelName: 'Transaction',
