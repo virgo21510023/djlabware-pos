@@ -34,6 +34,7 @@
                 <p class="font-semibold text-base">{{ purchaseOrder.supplier_name }}</p>
             </div>
             <table class="text-sm">
+              <tbody>
               <tr>
                 <td class="pr-4">No. PO</td>
                 <td class="font-semibold">: {{ purchaseOrder.po_number }}</td>
@@ -46,6 +47,7 @@
                 <td class="pr-4">Perkiraan Tiba</td>
                 <td class="font-semibold">: {{ formatTanggal(purchaseOrder.expected_delivery_date) }}</td>
               </tr>
+              </tbody>
             </table>
         </div>
 

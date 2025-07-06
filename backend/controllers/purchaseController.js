@@ -1,8 +1,5 @@
-const { Purchase, PurchaseItem, Product, PurchaseOrder, sequelize } = require('../models');
+const { Purchase, PurchaseItem, Product, PurchaseOrder, sequelize, Op } = require('../models');
 
-/**
- * Membuat data Pembelian baru, bisa dari PO atau manual
- */
 exports.createPurchase = async (req, res) => {
   const t = await sequelize.transaction();
   try {
@@ -11,51 +8,42 @@ exports.createPurchase = async (req, res) => {
       purchase_date, 
       supplier_name, 
       items,
-      purchase_order_id // Menerima ID PO jika ada
+      purchase_order_id
     } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ message: "Harus ada setidaknya satu item." });
     }
 
-    // Kalkulasi total pembelian
-    const subtotal = items.reduce((sum, item) => sum + (item.quantity_ordered * item.estimated_price), 0);
-    const discountAmount = subtotal * ((parseFloat(discount_percentage) || 0) / 100);
-    const subtotalAfterDiscount = subtotal - discountAmount;
-    const vatAmount = subtotalAfterDiscount * ((parseFloat(vat_percentage) || 0) / 100);
-    const grandTotal = subtotalAfterDiscount + vatAmount;
+    const totalAmount = items.reduce((sum, item) => sum + ((item.quantity || 0) * (item.purchase_price || 0)), 0);
 
-    // 1. Buat record Purchase utama
-    const purchaseOrder = await PurchaseOrder.create({
-      po_number: `PO-${Date.now()}`,
-      supplier_name,
-      order_date,
-      expected_delivery_date,
-      notes,
-      subtotal,
-      discount_percentage: parseFloat(discount_percentage) || 0,
-      vat_percentage: parseFloat(vat_percentage) || 0,
-      grand_total: grandTotal,
-      status: 'Dipesan'
+    const purchase = await Purchase.create({
+      invoice_number: invoice_number || `NOTA-${Date.now()}`,
+      purchase_date: purchase_date || new Date(),
+      supplier_name: supplier_name || 'N/A',
+      total_amount: totalAmount
     }, { transaction: t });
 
-    // 2. Proses setiap item
     for (const item of items) {
       let product;
-      // Cek jika ini produk baru
+      
       if (item.is_new) {
         product = await Product.create({
           name: item.name,
           sku: item.sku || `SKU-${Date.now()}`,
           stock: 0,
-          hpp: item.purchase_price || 0,
-          sell_price: item.sell_price || 0,
+          hpp: Number(item.purchase_price || 0),
+          sell_price: Number(item.sell_price || 0),
           kategori: item.kategori || 'Lainnya',
           merk: item.merk || 'N/A',
           satuan: item.satuan || 'Pcs',
-          status: 'listed' // Produk baru dari pembelian langsung di-list
+          status: 'listed'
         }, { transaction: t });
       } else {
+        // PERBAIKAN: Pastikan product_id ada sebelum mencari
+        if (!item.product_id) {
+          throw new Error(`ID Produk tidak valid untuk item: ${item.name}. Harap pilih dari daftar.`);
+        }
         product = await Product.findByPk(item.product_id, { transaction: t });
       }
 
@@ -63,26 +51,25 @@ exports.createPurchase = async (req, res) => {
         throw new Error(`Produk dengan ID ${item.product_id} tidak ditemukan.`);
       }
       
-      // 3. Buat record PurchaseItem
       await PurchaseItem.create({
         purchase_id: purchase.id,
         product_id: product.id,
-        quantity: item.quantity,
-        purchase_price: item.purchase_price
+        quantity: Number(item.quantity),
+        purchase_price: Number(item.purchase_price)
       }, { transaction: t });
 
-      // 4. Update stok, HPP, dan harga jual produk
-      await product.increment('stock', { by: item.quantity, transaction: t });
-      if(item.purchase_price > 0 && item.sell_price > 0) {
-        await product.update({
-          hpp: item.purchase_price,
-          sell_price: item.sell_price,
-          status: 'listed' // Pastikan statusnya 'listed' saat barang masuk
-        }, { transaction: t });
-      }
+      await product.increment('stock', { by: Number(item.quantity), transaction: t });
+      
+      await product.update({
+        hpp: Number(item.purchase_price),
+        sell_price: Number(item.sell_price),
+        kategori: item.kategori,
+        merk: item.merk,
+        satuan: item.satuan,
+        status: 'listed'
+      }, { transaction: t });
     }
     
-    // Jika pembelian ini dibuat dari sebuah PO, update status PO menjadi 'Selesai'
     if (purchase_order_id) {
       const po = await PurchaseOrder.findByPk(purchase_order_id, { transaction: t });
       if (po) {
@@ -96,14 +83,12 @@ exports.createPurchase = async (req, res) => {
 
   } catch (error) {
     await t.rollback();
+    console.error("Error di createPurchase:", error);
     res.status(500).json({ message: 'Gagal mencatat pembelian', error: error.message });
   }
 };
 
 
-/**
- * Mengambil semua nota pembelian (untuk riwayat)
- */
 exports.getAllPurchases = async (req, res) => {
   try {
     const { search, startDate, endDate } = req.query;
@@ -132,10 +117,6 @@ exports.getAllPurchases = async (req, res) => {
   }
 };
 
-
-/**
- * Mengambil detail satu nota pembelian
- */
 exports.getPurchaseById = async (req, res) => {
   try {
     const purchase = await Purchase.findByPk(req.params.id, {

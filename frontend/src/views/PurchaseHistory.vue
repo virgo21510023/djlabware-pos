@@ -64,6 +64,9 @@ import { format } from 'date-fns';
 import { id } from 'date-fns/locale/id';
 import { debounce } from 'lodash-es';
 import { ChevronRight } from 'lucide-vue-next';
+import { useToast } from "vue-toastification";
+
+const toast = useToast();
 
 const purchases = ref([]);
 const loading = ref(false);
@@ -123,7 +126,7 @@ const toggleDetails = async (purchase) => {
         // Update purchase di dalam array dengan data lengkap
         purchases.value[index] = { ...response.data, detailLoading: false };
       } catch (error) {
-        alert('Gagal mengambil detail item.');
+        toast.error('Gagal mengambil detail item.');
         // Tetap matikan loading meskipun error
         purchases.value[index].detailLoading = false;
       }

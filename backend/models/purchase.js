@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // TAMBAHKAN INI: Satu nota Pembelian memiliki banyak Item Pembelian
-      Purchase.hasMany(models.PurchaseItem, { foreignKey: 'purchase_id' });
+      Purchase.hasMany(models.PurchaseItem, { foreignKey: 'purchase_id', as: 'items' });
     }
   }
   Purchase.init({
