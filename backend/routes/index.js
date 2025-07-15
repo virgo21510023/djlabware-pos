@@ -27,6 +27,7 @@ router.get('/products', protect, productController.getAllProducts);
 router.post('/products', protect, admin, productController.createProduct);
 router.get('/products', protect, productController.getAllProducts);
 router.post('/products', protect, admin, productController.createProduct);
+router.get('/products/:id/purchase-history', protect, admin, productController.getProductPurchaseHistory);
 
 // Transaction Routes
 router.post('/products', protect, admin, productController.createProduct);

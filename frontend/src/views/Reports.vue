@@ -48,6 +48,29 @@
           </div>
         </div>
       </div>
+      
+      <div class="mt-8">
+        <h3 class="text-lg font-bold mb-4">Rincian per Metode Pembayaran</h3>
+        <div v-if="reportData.paymentMethodSummary && reportData.paymentMethodSummary.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div 
+            v-for="item in reportData.paymentMethodSummary" 
+            :key="item.payment_method" 
+            class="bg-surface dark:bg-dark-surface p-4 rounded-lg shadow border-l-4"
+            :class="getPaymentMethodStyle(item.payment_method).borderColor"
+          >
+            <div class="flex items-center mb-2">
+              <component :is="getPaymentMethodStyle(item.payment_method).icon" :class="getPaymentMethodStyle(item.payment_method).textColor" class="w-6 h-6 mr-3"/>
+              <h4 class="text-sm font-bold uppercase">{{ item.payment_method }}</h4>
+            </div>
+            <p class="text-2xl font-bold mt-2">Rp {{ formatRupiah(item.total_nominal) }}</p>
+            <p class="text-sm text-secondary dark:text-dark-secondary mt-1">{{ item.count }} Transaksi</p>
+          </div>
+        </div>
+        <div v-else class="bg-surface dark:bg-dark-surface p-6 rounded-lg shadow">
+            <p class="text-secondary">Tidak ada data untuk ditampilkan.</p>
+        </div>
+      </div>
+
     </div>
     <div v-else class="text-center py-10"><p>Gagal memuat data atau tidak ada data pada rentang tanggal ini.</p></div>
 
@@ -58,6 +81,8 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useToast } from "vue-toastification";
+// Impor ikon yang dibutuhkan
+import { Wallet, QrCode, Send, Landmark } from 'lucide-vue-next';
 
 const toast = useToast();
 const startDate = ref('');
@@ -70,10 +95,26 @@ const formatRupiah = (number) => {
   return Number(number).toLocaleString('id-ID');
 };
 
+// Fungsi untuk memberikan style pada kartu
+const getPaymentMethodStyle = (method) => {
+  switch (method?.toLowerCase()) {
+    case 'tunai':
+      return { icon: Wallet, borderColor: 'border-blue-500', textColor: 'text-blue-500' };
+    case 'qris':
+      return { icon: QrCode, borderColor: 'border-purple-500', textColor: 'text-purple-500' };
+    case 'transfer':
+      return { icon: Send, borderColor: 'border-orange-500', textColor: 'text-orange-500' };
+    case 'dp':
+      return { icon: Landmark, borderColor: 'border-teal-500', textColor: 'text-teal-500' };
+    default:
+      return { icon: Wallet, borderColor: 'border-gray-500', textColor: 'text-gray-500' };
+  }
+};
+
 const downloadCSV = () => {
   if (!reportData.value) return;
 
-  const { totalOmzet, labaKotor, totalTransactions, totalRefund } = reportData.value;
+  const { totalOmzet, labaKotor, totalTransactions, totalRefund, paymentMethodSummary } = reportData.value;
   let csvContent = "data:text/csv;charset=utf-8,";
   
   csvContent += "Metrik,Jumlah\r\n";
@@ -81,6 +122,14 @@ const downloadCSV = () => {
   csvContent += `Laba Kotor Bersih,${labaKotor}\r\n`;
   csvContent += `Total Transaksi,${totalTransactions}\r\n`;
   csvContent += `Total Nilai Retur,${totalRefund}\r\n`;
+  csvContent += "\r\n";
+  
+  if (paymentMethodSummary && paymentMethodSummary.length > 0) {
+    csvContent += "Metode Pembayaran,Jumlah Transaksi,Total Nominal\r\n";
+    paymentMethodSummary.forEach(item => {
+      csvContent += `${item.payment_method},${item.count},${item.total_nominal}\r\n`;
+    });
+  }
 
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");

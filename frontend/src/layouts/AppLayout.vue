@@ -14,7 +14,7 @@
       <nav class="flex-grow flex flex-col overflow-y-auto pr-2">
         <RouterLink v-for="item in navItems" :key="item.name" :to="item.path"
           class="flex items-center px-4 py-3 mb-2 rounded-full hover:bg-primary/10 relative" :class="{
-            'bg-primary/10 font-semibold text-primary dark:text-dark-primary': ($route.path.startsWith(item.path) && item.path !== '/') || $route.path === item.path,
+            'bg-primary/10 font-semibold text-primary dark:text-dark-primary': $route.name === item.name || $route.meta.parent === item.name,
             'justify-center': !isSidebarExpanded,
           }">
           <component :is="item.icon" class="w-5 h-5 flex-shrink-0" />
@@ -85,7 +85,7 @@ const allNavItems = shallowRef([
   { name: 'POS', path: '/pos', icon: ShoppingCart },
   { name: 'Riwayat', path: '/history', icon: HistoryIcon, admin: true },
   { name: 'Inventory', path: '/inventory', icon: Package, admin: true },
-  { name: 'Purchase Order', path: '/purchase-orders', icon: ShoppingCart, admin: true },
+  { name: 'Daftar Purchase Order', path: '/purchase-orders', icon: ClipboardList, admin: true },
   { name: 'Pembelian', path: '/purchasing', icon: Truck, admin: true },
   { name: 'Riwayat Pembelian', path: '/purchase-history', icon: ClipboardList, admin: true },
   { name: 'Buat Penawaran', path: '/quotations/new', icon: FileText, admin: true },

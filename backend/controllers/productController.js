@@ -1,4 +1,4 @@
-const { Product, Sequelize } = require('../models');
+const { Product, PurchaseItem, Purchase, Sequelize } = require('../models');
 const { Op } = Sequelize;
 
 /**
@@ -61,15 +61,38 @@ exports.createProduct = async (req, res) => {
  * Memperbarui data produk
  */
 exports.updateProduct = async (req, res) => {
+  console.log(`--- [DEBUG] Memulai update untuk produk ID: ${req.params.id} ---`);
+  console.log("Data diterima dari frontend:", req.body);
+
   try {
     const product = await Product.findByPk(req.params.id);
+
     if (product) {
-      await product.update(req.body);
-      res.json(product);
+      console.log("Data Asli dari DB:", JSON.stringify(product.get({ plain: true }), null, 2));
+
+      // Mengubah nilai properti dari data yang diterima
+      product.set(req.body);
+      console.log("Data setelah di-set (di memori):", JSON.stringify(product.get({ plain: true }), null, 2));
+
+      // PENTING: Cek apakah Sequelize mendeteksi adanya perubahan
+      console.log("Kolom yang berubah:", product.changed());
+
+      if (product.changed()) {
+        console.log("Mencoba menyimpan perubahan ke database...");
+        await product.save();
+        console.log("--- [DEBUG] SUKSES menyimpan ke database. ---");
+      } else {
+        console.log("--- [DEBUG] Tidak ada perubahan yang terdeteksi, tidak ada yang disimpan. ---");
+      }
+      
+      res.json(product); // Kirim kembali data setelah proses
+
     } else {
+      console.log(`--- [DEBUG] Produk dengan ID ${req.params.id} tidak ditemukan.`);
       res.status(404).json({ message: 'Produk tidak ditemukan' });
     }
   } catch (error) {
+    console.error("!!! ERROR di updateProduct:", error);
     res.status(400).json({ message: 'Gagal memperbarui produk', error: error.message });
   }
 };
@@ -88,5 +111,27 @@ exports.deleteProduct = async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ message: 'Gagal menghapus produk', error: error.message });
+  }
+};
+
+/**
+ * FUNGSI PENTING UNTUK RIWAYAT
+ * Mengambil riwayat pembelian untuk satu produk spesifik
+ */
+exports.getProductPurchaseHistory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const purchaseItems = await PurchaseItem.findAll({
+      where: { product_id: id },
+      include: [{
+        model: Purchase,
+        attributes: ['purchase_date', 'supplier_name']
+      }],
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(purchaseItems);
+  } catch (error) {
+    console.error("Error getProductPurchaseHistory:", error);
+    res.status(500).json({ message: "Gagal mengambil riwayat pembelian produk" });
   }
 };
