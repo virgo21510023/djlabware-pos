@@ -1,7 +1,7 @@
 <template>
   <div class="struk-container">
     <div class="text-center">
-      <img v-if="storeInfo.store_logo" :src="backendUrl + storeInfo.store_logo" alt="Logo Toko" class="max-h-20">
+      <img v-if="storeInfo.store_logo" :src="backendUrl + storeInfo.store_logo" alt="Logo" class="max-h-16 mx-auto mb-2">
       <h2 class="text-xl font-bold">{{ storeInfo.store_name || 'djlabware POS' }}</h2>
       <p class="text-xs">{{ storeInfo.store_address || 'Alamat Toko Anda' }}</p>
       <p class="text-xs">{{ storeInfo.store_phone || 'Kontak Toko Anda' }}</p>
@@ -29,21 +29,23 @@
         <span>Total</span>
         <span>{{ formatRupiah(transaction.total_amount) }}</span>
       </div>
-      <div v-if="transaction.status === 'Belum Lunas'" class="flex justify-between">
-        <span>DP Dibayar</span>
-        <span>{{ formatRupiah(transaction.amount_paid) }}</span>
-      </div>
-       <div v-if="transaction.status === 'Belum Lunas'" class="flex justify-between font-bold">
-        <span>Sisa Bayar</span>
-        <span>{{ formatRupiah(transaction.remaining_amount) }}</span>
-      </div>
-      <div v-if="transaction.payment_method === 'Tunai' && transaction.status === 'Lunas'" class="flex justify-between">
+      <div v-if="transaction.payment_method === 'Tunai'" class="flex justify-between">
         <span>Tunai</span>
         <span>{{ formatRupiah(transaction.amount_paid) }}</span>
       </div>
-      <div v-if="transaction.payment_method === 'Tunai' && transaction.status === 'Lunas'" class="flex justify-between">
+      <div v-if="isChangeVisible" class="flex justify-between">
         <span>Kembali</span>
         <span>{{ formatRupiah(transaction.amount_paid - transaction.total_amount) }}</span>
+      </div>
+       <div v-if="transaction.status === 'Belum Lunas'">
+        <div class="flex justify-between">
+          <span>DP Dibayar</span>
+          <span>{{ formatRupiah(transaction.amount_paid) }}</span>
+        </div>
+        <div class="flex justify-between font-bold">
+          <span>Sisa Bayar</span>
+          <span>{{ formatRupiah(transaction.remaining_amount) }}</span>
+        </div>
       </div>
     </div>
     <hr class="my-2 border-dashed border-black">
@@ -57,26 +59,34 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { format } from 'date-fns';
+import { id } from 'date-fns/locale/id';
 
-defineProps({
+// Definisikan backendUrl untuk membangun path gambar
+const backendUrl = 'http://localhost:5000';
+
+const props = defineProps({
   transaction: Object,
   storeInfo: Object
 });
 
-const backendUrl = 'http://localhost:5000';
+const formatRupiah = (number) => Number(number || 0).toLocaleString('id-ID');
+const formatTanggal = (dateString) => format(new Date(dateString), "dd/MM/yy HH:mm");
 
-const formatRupiah = (number) => Number(number ? number : 0).toLocaleString('id-ID');
-const formatTanggal = (dateString) => {
-  if (!dateString) return '';
-  return format(new Date(dateString), "dd/MM/yy HH:mm");
-}
+const isChangeVisible = computed(() => {
+  return props.transaction.payment_method === 'Tunai' && 
+         props.transaction.status === 'Lunas' && 
+         (props.transaction.amount_paid > props.transaction.total_amount);
+});
 </script>
 
 <style scoped>
 .struk-container {
-  width: 300px;
+  width: 58mm;
+  padding: 3mm;
   font-family: 'Courier New', Courier, monospace;
   color: black;
+  font-size: 8pt;
 }
 </style>

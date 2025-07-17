@@ -77,7 +77,22 @@
         </div>
 
         <hr class="my-6">
+        <div>
+          <h3 class="text-lg font-bold">Format Struk/Invoice</h3>
+          <p class="text-sm text-secondary dark:text-dark-secondary mb-3">Pilih format cetak default.</p>
+          <div class="mt-2 flex items-center space-x-6">
+            <label class="flex items-center cursor-pointer">
+              <input type="radio" v-model="settings.receipt_format" value="thermal_58mm" class="form-radio">
+              <span class="ml-2">Thermal 58mm</span>
+            </label>
+            <label class="flex items-center cursor-pointer">
+              <input type="radio" v-model="settings.receipt_format" value="a5_landscape" class="form-radio">
+              <span class="ml-2">A5 Landscape</span>
+            </label>
+          </div>
+        </div>
 
+        <hr class="my-6">
         <div>
           <h3 class="text-lg font-bold">Catatan Dokumen</h3>
           <p class="text-sm text-secondary dark:text-dark-secondary mb-3">Akan tampil di bagian bawah struk & penawaran.
@@ -143,7 +158,9 @@ const settings = reactive({
   store_note: '',
   bank_name: '',
   bank_account: '',
-  bank_beneficiary: ''
+  bank_beneficiary: '',
+  receipt_format: 'thermal_58mm', // <-- Tambahkan nilai default
+
 });
 
 // --- Logika untuk Tema ---

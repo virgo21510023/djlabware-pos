@@ -168,20 +168,21 @@
       </div>
     </div>
 
-    <div v-if="transactionToPrint" class="print-area">
-      <Struk :transaction="transactionToPrint" :storeInfo="storeInfo" />
+    <div v-if="transactionToPrint" class="print-area"
+      :class="{ 'thermal-print-format': storeInfo.receipt_format === 'thermal_58mm' }">
+      <component :is="receiptComponent" :transaction="transactionToPrint" :storeInfo="storeInfo" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, watch, nextTick } from 'vue';
+import { ref, onMounted, reactive, watch, nextTick, computed, shallowRef } from 'vue';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale/id';
 import { useToast } from "vue-toastification";
 import Struk from '../components/Struk.vue';
-import { debounce } from 'lodash-es';
+import StrukA5 from '../components/StrukA5.vue'; import { debounce } from 'lodash-es';
 
 const toast = useToast();
 const transactions = ref([]);
@@ -191,8 +192,10 @@ const filters = reactive({
   startDate: '',
   endDate: ''
 });
+const storeInfo = reactive({
+  receipt_format: 'thermal_58mm' // Nilai default
+});
 const transactionToPrint = ref(null);
-const storeInfo = reactive({});
 
 // State untuk Modal Detail
 const isDetailModalOpen = ref(false);
@@ -300,16 +303,6 @@ const openDetailModal = async (transactionId) => {
   }
 };
 
-const reprintReceipt = async (transactionId) => {
-  const trxDetail = await fetchTransactionDetail(transactionId);
-  if (trxDetail) {
-    transactionToPrint.value = trxDetail;
-    await nextTick();
-    window.print();
-    transactionToPrint.value = null;
-  }
-};
-
 const openSettleModal = (transaction) => {
   transactionToSettle.value = transaction;
   settleAmount.value = transaction.remaining_amount;
@@ -379,6 +372,21 @@ const handleProcessReturn = async () => {
     fetchTransactions();
   } catch (error) {
     toast.error('Gagal memproses retur.');
+  }
+};
+
+// Computed property untuk memilih komponen struk secara dinamis
+const receiptComponent = computed(() => {
+  return storeInfo.receipt_format === 'a5_landscape' ? StrukA5 : Struk;
+});
+
+const reprintReceipt = async (transactionId) => {
+  const trxDetail = await fetchTransactionDetail(transactionId);
+  if (trxDetail) {
+    transactionToPrint.value = trxDetail;
+    await nextTick();
+    window.print();
+    transactionToPrint.value = null;
   }
 };
 </script>

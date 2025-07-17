@@ -13,3 +13,33 @@
     @apply bg-dark-background text-dark-on-surface;
   }
 }
+
+@media print {
+  /* Aturan umum untuk menyembunyikan semua kecuali area cetak */
+  body * {
+    visibility: hidden;
+  }
+  .print-area, .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  /* Aturan default adalah A5 Landscape */
+  @page {
+    size: A5 landscape;
+    margin: 0.1cm; /* <-- Diperkecil dari 1cm */
+  }
+
+  /* Aturan khusus JIKA format thermal dipilih */
+  .thermal-print-format {
+    @page {
+      size: 58mm 210mm; /* Lebar 58mm, tinggi bisa panjang */
+      margin: 0;
+    }
+  }
+}

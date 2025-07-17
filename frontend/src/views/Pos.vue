@@ -95,7 +95,7 @@
         <div v-if="paymentData.is_dp" class="space-y-4">
           <div>
             <label for="dpAmountModal" class="block text-sm font-medium">Jumlah DP</label>
-            <input v-model.number="paymentData.amount_paid" id="dpAmountModal" type="number" class="mt-1 w-full p-2 text-xl border rounded-md" ref="dpInputRef">
+            <CurrencyInput v-model="paymentData.amount_paid" id="dpAmountModal" ref="dpInputRef" />
           </div>
           <div class="flex justify-between text-lg font-bold">
             <span>Sisa Tagihan:</span>
@@ -135,7 +135,7 @@
           </div>
           <div v-if="paymentData.payment_method === 'Tunai'">
             <label for="cashModal" class="block text-sm font-medium">Uang Diterima</label>
-            <input v-model.number="cashReceived" id="cashModal" type="number" class="mt-1 w-full p-2 text-xl border rounded-md" ref="cashInputRef">
+            <CurrencyInput v-model="cashReceived" id="cashModal" ref="cashInputRef" />
             <div class="mt-2 flex justify-between text-lg font-bold"><span>Kembalian:</span> <span>Rp {{ changeRupiah }}</span></div>
           </div>
         </div>
@@ -151,41 +151,69 @@
     </div>
   </div>
 
-  <div v-if="lastTransaction" class="print-area">
-    <Struk :transaction="lastTransaction" :storeInfo="storeInfo" />
+  <div v-if="lastTransaction" class="print-area" :class="{ 'thermal-print-format': storeInfo.receipt_format === 'thermal_58mm' }">
+    <component 
+      :is="receiptComponent"
+      :transaction="lastTransaction" 
+      :storeInfo="storeInfo" 
+    />
   </div>
 </template>
 
 <style>
 @media print {
-  body * { visibility: hidden; }
-  .print-area, .print-area * { visibility: visible; }
-  .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+  body * {
+    visibility: hidden;
+  }
+  .print-area, .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  /* Aturan default adalah A5 Landscape */
+  @page {
+    size: A5 landscape;
+    margin: 1cm;
+  }
+
+  /* Aturan khusus JIKA format thermal dipilih */
+  .thermal-print-format {
+    @page {
+      size: 58mm 210mm;
+      margin: 0;
+    }
+  }
 }
 </style>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, reactive } from 'vue';
+import { ref, computed, onMounted, nextTick, reactive, shallowRef } from 'vue';
 import { useProductStore } from '../stores/product';
 import { storeToRefs } from 'pinia';
 import axios from 'axios';
 import { Trash2, LoaderCircle } from 'lucide-vue-next';
-import Struk from '../components/Struk.vue';
 import { useToast } from "vue-toastification";
+import Struk from '../components/Struk.vue';
+import StrukA5 from '../components/StrukA5.vue';
+import CurrencyInput from '../components/CurrencyInput.vue';
 
 const toast = useToast();
-
-// Store & State
 const productStore = useProductStore();
-const { allProducts: products, loading } = storeToRefs(productStore); // <-- Menggunakan allProducts
+const { allProducts: products, loading } = storeToRefs(productStore);
 
 const searchQuery = ref('');
 const cart = ref([]);
 const paymentLoading = ref(false);
 const lastTransaction = ref(null);
-const storeInfo = reactive({});
+const storeInfo = reactive({
+  receipt_format: 'thermal_58mm'
+});
 
-// State Modal Pembayaran Universal
 const isPaymentModalOpen = ref(false);
 const paymentData = reactive({
   customer_name: '',
@@ -197,7 +225,6 @@ const cashReceived = ref(0);
 const cashInputRef = ref(null);
 const dpInputRef = ref(null);
 
-// Computed Properties
 const totalNumber = computed(() => cart.value.reduce((sum, item) => sum + (item.sell_price * item.quantity), 0));
 const totalRupiah = computed(() => formatRupiah(totalNumber.value));
 const isCartEmpty = computed(() => cart.value.length === 0);
@@ -237,15 +264,18 @@ const filteredProducts = computed(() => {
   );
 });
 
-// Helper Function
+// PERBAIKAN UTAMA: Hapus shallowRef di sini
+const receiptComponent = computed(() => {
+  return storeInfo.receipt_format === 'a5_landscape' ? StrukA5 : Struk;
+});
+
 const formatRupiah = (number) => {
   if (number === null || number === undefined) return '0';
   return Number(number).toLocaleString('id-ID');
 };
 
-// Lifecycle Hooks
 onMounted(async () => {
-  productStore.fetchAllProducts(); // <-- Mengambil semua produk
+  productStore.fetchAllProducts();
   try {
     const response = await axios.get('/settings');
     Object.assign(storeInfo, response.data);
@@ -254,10 +284,9 @@ onMounted(async () => {
   }
 });
 
-// Methods
 function addToCart(product) {
   if (product.stock <= 0) {
-    toast.warning("Stok produk habis!"); // <-- Ganti alert
+    toast.warning("Stok produk habis!");
     return;
   }
   const cartItem = cart.value.find(item => item.id === product.id);
@@ -265,7 +294,7 @@ function addToCart(product) {
     if (cartItem.quantity < product.stock) {
       cartItem.quantity++;
     } else {
-      toast.info(`Stok maksimal untuk ${product.name} telah tercapai.`); // <-- Ganti alert
+      toast.info(`Stok maksimal untuk ${product.name} telah tercapai.`);
     }
   } else {
     cart.value.push({ ...product, quantity: 1 });
@@ -282,7 +311,7 @@ function updateQuantity(item, amount) {
       cart.value.splice(itemIndex, 1);
     }
   } else {
-    toast.info(`Stok maksimal untuk ${item.name} adalah ${item.stock}.`); // <-- Ganti alert
+    toast.info(`Stok maksimal untuk ${item.name} adalah ${item.stock}.`);
     item.quantity = item.stock;
   }
 }
@@ -325,15 +354,14 @@ const processPayment = async () => {
   try {
     const response = await axios.post('/transactions', payload);
     isPaymentModalOpen.value = false;
-    toast.success('Transaksi berhasil!'); // <-- Ganti alert
+    toast.success('Transaksi berhasil!');
     
     await printReceipt(response.data);
     
-    // Reset state setelah semua selesai
     cart.value = [];
     await productStore.fetchAllProducts();
   } catch (error) {
-    toast.error(`Transaksi gagal: ${error.response?.data?.message || error.message}`); // <-- Ganti alert
+    toast.error(`Transaksi gagal: ${error.response?.data?.message || error.message}`);
   } finally {
     paymentLoading.value = false;
   }
