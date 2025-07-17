@@ -37,6 +37,7 @@ router.delete('/products/:id', protect, admin, productController.deleteProduct);
 router.get('/transactions', protect, admin, transactionController.getAllTransactions);
 router.get('/transactions/:id', protect, admin, transactionController.getTransactionById);
 router.put('/transactions/:id/settle', protect, admin, transactionController.settleTransaction);
+router.get('/transactions/:transactionId/returnable-items', protect, admin, transactionController.getReturnableItems);
 
 // Report Routes
 router.get('/reports/sales', protect, admin, reportController.getSalesReport);

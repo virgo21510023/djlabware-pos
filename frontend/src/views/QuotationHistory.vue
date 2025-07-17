@@ -2,10 +2,11 @@
   <div>
     <h1 class="text-3xl font-bold text-on-surface dark:text-dark-on-surface">Riwayat Penawaran</h1>
     <p class="mt-2 text-secondary dark:text-dark-secondary">Lacak semua penawaran yang pernah dibuat dan statusnya.</p>
-    
+
     <div class="mt-6 bg-surface dark:bg-dark-surface p-4 sm:p-6 rounded-lg shadow">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 items-end">
-        <input v-model="filters.search" type="text" placeholder="Cari No. Penawaran / Pelanggan..." class="md:col-span-2 w-full p-2 border rounded-md" />
+        <input v-model="filters.search" type="text" placeholder="Cari No. Penawaran / Pelanggan..."
+          class="md:col-span-2 w-full p-2 border rounded-md" />
         <input v-model="filters.startDate" type="date" class="w-full p-2 border rounded-md">
         <input v-model="filters.endDate" type="date" class="w-full p-2 border rounded-md">
       </div>
@@ -23,13 +24,18 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            <tr v-if="loading"><td colspan="6" class="text-center py-4">Memuat data...</td></tr>
-            <tr v-else-if="quotations.length === 0"><td colspan="6" class="text-center py-4">Tidak ada riwayat penawaran.</td></tr>
-            
+            <tr v-if="loading">
+              <td colspan="6" class="text-center py-4">Memuat data...</td>
+            </tr>
+            <tr v-else-if="quotations.length === 0">
+              <td colspan="6" class="text-center py-4">Tidak ada riwayat penawaran.</td>
+            </tr>
+
             <template v-for="quote in quotations" :key="quote.id">
               <tr @click="toggleDetails(quote)" class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
                 <td class="px-4 py-4 text-center">
-                  <ChevronRight class="w-5 h-5 transition-transform" :class="{ 'rotate-90': expandedId === quote.id }" />
+                  <ChevronRight class="w-5 h-5 transition-transform"
+                    :class="{ 'rotate-90': expandedId === quote.id }" />
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap font-mono">{{ quote.quotation_number }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">{{ formatTanggal(quote.quotation_date) }}</td>
@@ -39,9 +45,10 @@
                     {{ quote.status }}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right font-semibold">Rp {{ formatRupiah(quote.grand_total) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right font-semibold">Rp {{ formatRupiah(quote.grand_total)
+                  }}</td>
               </tr>
-              
+
               <tr v-if="expandedId === quote.id">
                 <td colspan="6" class="p-4 bg-gray-50 dark:bg-gray-800">
                   <div v-if="quote.detailLoading" class="text-center">Memuat detail...</div>
@@ -49,12 +56,15 @@
                     <h4 class="font-bold mb-2">Detail Item:</h4>
                     <ul class="list-disc list-inside space-y-1 text-sm">
                       <li v-for="item in quote.items" :key="item.id">
-                        {{ item.product_name }} - <strong>{{ item.quantity }} {{ item.Product?.satuan || '' }}</strong> @ Rp {{ formatRupiah(item.price) }}
-                        <span v-if="item.stock_status === 'PO'" class="ml-2 text-xs bg-red-200 text-red-800 px-1 rounded">PO</span>
+                        {{ item.product_name }} - <strong>{{ item.quantity }}</strong> @ Rp {{ formatRupiah(item.price)
+                        }}
+                        <span v-if="item.stock_status === 'PO'"
+                          class="ml-2 text-xs bg-red-200 text-red-800 px-1 rounded">PO</span>
                       </li>
                     </ul>
                     <div class="mt-4">
-                      <button @click="createInvoice(quote.id)" class="bg-green-600 text-white font-bold py-2 px-4 rounded-md">
+                      <button @click="openInvoiceConfirm(quote)"
+                        class="bg-green-600 text-white font-bold py-2 px-4 rounded-md">
                         Buat Invoice
                       </button>
                     </div>
@@ -66,21 +76,27 @@
         </table>
       </div>
     </div>
+
+    <ConfirmModal :show="isConfirmModalOpen" title="Konfirmasi Buat Invoice"
+      :message="`Apakah Anda yakin ingin membuat Invoice dari penawaran '${quotationToProcess?.quotation_number}'? Stok akan dipotong.`"
+      variant="primary" confirmText="Iya, Lanjutkan" :icon="CheckCircle" @cancel="closeConfirmModal"
+      @confirm="confirmCreateInvoice" />
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue';
 import axios from 'axios';
+import { useToast } from "vue-toastification";
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale/id';
 import { debounce } from 'lodash-es';
-import { ChevronRight } from 'lucide-vue-next';
+import { ChevronRight, CheckCircle } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
-import { useToast } from "vue-toastification";
+import ConfirmModal from '../components/ConfirmModal.vue';
 
-const toast = useToast();
 const router = useRouter();
+const toast = useToast();
 const quotations = ref([]);
 const loading = ref(false);
 const expandedId = ref(null);
@@ -91,18 +107,22 @@ const filters = reactive({
   endDate: ''
 });
 
+const isConfirmModalOpen = ref(false);
+const quotationToProcess = ref(null);
+
 const formatRupiah = (number) => Number(number || 0).toLocaleString('id-ID');
+
 const formatTanggal = (dateString) => {
   if (!dateString) return 'N/A';
   return format(new Date(dateString), "d MMM yyyy", { locale: id });
 };
 
 const getStatusClass = (status) => {
-  const S = status?.toLowerCase();
-  if (S === 'disetujui' || S === 'selesai (invoiced)') return 'bg-green-100 text-green-800 dark:bg-green-800/50 dark:text-green-300';
-  if (S === 'ditolak') return 'bg-red-100 text-red-800 dark:bg-red-800/50 dark:text-red-300';
-  if (S === 'terkirim') return 'bg-blue-100 text-blue-800 dark:bg-blue-800/50 dark:text-blue-300';
-  return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+  const s = status?.toLowerCase();
+  if (s === 'disetujui' || s === 'selesai (invoiced)') return 'bg-green-100 text-green-800 dark:bg-green-800/50 dark:text-green-300';
+  if (s === 'ditolak') return 'bg-red-100 text-red-800 dark:bg-red-800/50 dark:text-red-300';
+  if (s === 'terkirim') return 'bg-blue-100 text-blue-800 dark:bg-blue-800/50 dark:text-blue-300';
+  return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'; // Draft
 };
 
 const fetchQuotations = async () => {
@@ -134,9 +154,9 @@ const toggleDetails = async (quote) => {
   } else {
     const index = quotations.value.findIndex(q => q.id === quote.id);
     if (index === -1) return;
-    
+
     expandedId.value = quote.id;
-    
+
     if (!quotations.value[index].items) {
       quotations.value[index].detailLoading = true;
       try {
@@ -150,15 +170,26 @@ const toggleDetails = async (quote) => {
   }
 };
 
-const createInvoice = async (quotationId) => {
-  if (confirm('Apakah Anda yakin ingin membuat Invoice dari penawaran ini? Aksi ini akan memotong stok.')) {
-    try {
-      const response = await axios.post('/invoices/from-quotation', { quotationId });
-      toast.success(`Invoice ${response.data.invoice_number} berhasil dibuat!`);
-      router.push('/invoices');
-    } catch (error) {
-      toast.error(`Gagal membuat invoice: ${error.response?.data?.message || 'Error tidak diketahui'}`);
-    }
+const openInvoiceConfirm = (quote) => {
+  quotationToProcess.value = quote;
+  isConfirmModalOpen.value = true;
+};
+
+const closeConfirmModal = () => {
+  isConfirmModalOpen.value = false;
+  quotationToProcess.value = null;
+};
+
+const confirmCreateInvoice = async () => {
+  if (!quotationToProcess.value) return;
+  try {
+    const response = await axios.post('/invoices/from-quotation', { quotationId: quotationToProcess.value.id });
+    toast.success(`Invoice ${response.data.invoice_number} berhasil dibuat!`);
+    router.push('/invoices');
+  } catch (error) {
+    toast.error(`Gagal membuat invoice: ${error.response?.data?.message || 'Error tidak diketahui'}`);
+  } finally {
+    closeConfirmModal();
   }
 };
 </script>

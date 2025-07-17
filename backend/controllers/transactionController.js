@@ -1,8 +1,7 @@
-const { Transaction, TransactionItem, Product, User, sequelize } = require('../models');
-const { Op } = require('sequelize');
+const { Transaction, TransactionItem, Product, User, SalesReturn, SalesReturnItem, sequelize, Op } = require('../models');
 
 /**
- * Membuat transaksi baru (bisa lunas atau DP)
+ * Membuat transaksi baru
  */
 exports.createTransaction = async (req, res) => {
   const t = await sequelize.transaction();
@@ -105,7 +104,9 @@ exports.getAllTransactions = async (req, res) => {
         attributes: ['name']
       }]
     });
+    
     res.json(transactions);
+
   } catch (error) {
     res.status(500).json({ message: "Gagal mengambil data transaksi", error: error.message });
   }
@@ -160,5 +161,52 @@ exports.settleTransaction = async (req, res) => {
     res.json(transaction);
   } catch (error) {
     res.status(500).json({ message: "Gagal melunasi transaksi", error: error.message });
+  }
+};
+
+/**
+ * FUNGSI YANG HILANG
+ * Mengambil item yang bisa diretur dari sebuah transaksi
+ */
+exports.getReturnableItems = async (req, res) => {
+    try {
+    const { transactionId } = req.params;
+    
+    const originalItems = await TransactionItem.findAll({
+      where: { transaction_id: transactionId },
+      include: [Product],
+      raw: true,
+      nest: true,
+    });
+
+    const returnedItems = await SalesReturnItem.findAll({
+      attributes: [
+        'product_id',
+        [sequelize.fn('SUM', sequelize.col('quantity_returned')), 'total_returned']
+      ],
+      include: [{
+        model: SalesReturn,
+        attributes: [],
+        where: { transaction_id: transactionId }
+      }],
+      group: ['product_id'],
+      raw: true
+    });
+    
+    const returnableItems = originalItems.map(item => {
+      const foundReturned = returnedItems.find(r => r.product_id === item.product_id);
+      const totalReturned = foundReturned ? parseFloat(foundReturned.total_returned) : 0;
+      return {
+        ...item,
+        quantity_purchased: item.quantity,
+        quantity_already_returned: totalReturned,
+        max_returnable: item.quantity - totalReturned
+      };
+    });
+
+    res.json(returnableItems);
+
+  } catch (error) {
+    res.status(500).json({ message: "Gagal mengambil data item retur", error: error.message });
   }
 };

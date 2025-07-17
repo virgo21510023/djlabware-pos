@@ -49,7 +49,7 @@
                 <td class="px-6 py-4 whitespace-nowrap text-right font-semibold">Rp {{ formatRupiah(product.sell_price) }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button @click.stop="openProductModal(product)" class="text-primary hover:text-primary/80">Edit</button>
-                  <button @click.stop="handleDeleteProduct(product.id, product.name)" class="text-red-500 hover:text-red-400 ml-4">Hapus</button>
+                  <button @click.stop="openDeleteConfirm(product)" class="text-red-500 hover:text-red-400 ml-4">Hapus</button>
                 </td>
               </tr>
               <tr v-if="expandedProductId === product.id">
@@ -137,6 +137,15 @@
     <datalist id="brand-list">
       <option v-for="brand in allBrands" :key="brand" :value="brand"></option>
     </datalist>
+
+    <ConfirmModal 
+      :show="isConfirmModalOpen"
+      :icon="AlertTriangle"
+      title="Hapus Produk"
+      :message="`Apakah Anda yakin ingin menghapus produk '${productToDelete?.name}'? Stok yang ada juga akan hilang.`"
+      @cancel="closeConfirmModal"
+      @confirm="deleteProduct"
+    />
   </div>
 </template>
 
@@ -151,6 +160,8 @@ import { debounce } from 'lodash-es';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale/id';
 import CurrencyInput from '../components/CurrencyInput.vue';
+import ConfirmModal from '../components/ConfirmModal.vue';
+import { AlertTriangle } from 'lucide-vue-next'; // <-- Add AlertTriangle
 
 const productStore = useProductStore();
 const { paginatedProducts: products, loading, currentPage, totalPages } = storeToRefs(productStore);
@@ -162,6 +173,8 @@ const isEditing = ref(false);
 const expandedProductId = ref(null);
 const allCategories = ref([]);
 const allBrands = ref([]);
+const isConfirmModalOpen = ref(false);
+const productToDelete = ref(null);
 
 const editableProduct = reactive({
   id: null, name: '', sku: '', kategori: '', merk: '', satuan: '',
@@ -239,10 +252,6 @@ const openProductModal = (product = null) => {
 const closeProductModal = () => isProductModalOpen.value = false;
 
 const handleSaveProduct = async () => {
-  console.log("--- [DEBUG] Tombol Simpan di Modal Ditekan ---");
-  console.log("Status isEditing:", isEditing.value);
-  console.log("Data yang akan disimpan:", JSON.parse(JSON.stringify(editableProduct)));
-
   try {
     const payload = {
       ...editableProduct,
@@ -252,11 +261,9 @@ const handleSaveProduct = async () => {
     };
 
     if (isEditing.value) {
-      console.log("--- [DEBUG] Masuk ke mode EDIT. Memanggil productStore.updateProduct... ---");
       await productStore.updateProduct(payload);
       toast.success(`Produk "${payload.name}" berhasil diperbarui.`);
     } else {
-      console.log("--- [DEBUG] Masuk ke mode TAMBAH BARU. Memanggil productStore.addProduct... ---");
       await productStore.addProduct(payload);
       toast.success(`Produk "${payload.name}" berhasil ditambahkan.`);
     }
@@ -267,14 +274,25 @@ const handleSaveProduct = async () => {
   }
 };
 
-const handleDeleteProduct = async (productId, productName) => {
-  if (confirm(`Apakah Anda yakin ingin menghapus produk "${productName}"?`)) {
-    try {
-      await productStore.deleteProduct(productId);
-      toast.success(`Produk "${productName}" berhasil dihapus.`);
-    } catch (error) {
-      toast.error('Gagal menghapus produk.');
-    }
+const openDeleteConfirm = (product) => {
+  productToDelete.value = product;
+  isConfirmModalOpen.value = true;
+};
+
+const closeConfirmModal = () => {
+  isConfirmModalOpen.value = false;
+  productToDelete.value = null;
+};
+
+const deleteProduct = async () => {
+  if (!productToDelete.value) return;
+  try {
+    await productStore.deleteProduct(productToDelete.value.id);
+    toast.success(`Produk "${productToDelete.value.name}" berhasil dihapus.`);
+  } catch (error) {
+    toast.error('Gagal menghapus produk.');
+  } finally {
+    closeConfirmModal();
   }
 };
 </script>

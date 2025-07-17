@@ -47,7 +47,7 @@ const routes = [
       { path: '/invoices/:id', name: 'Detail Invoice', component: InvoiceDetail, meta: { requiresAdmin: true } },
       { path: '/delivery-order/:id/print', name: 'Cetak Surat Jalan', component: DeliveryOrderDetail, meta: { requiresAuth: true, isAdmin: true } },
       // --- PERUBAHAN DI SINI ---
-      { path: 'purchase-orders', name: 'Daftar Purchase Order', component: PurchaseOrderList, meta: { requiresAdmin: true } },
+      { path: 'purchase-orders', name: 'Purchase Order', component: PurchaseOrderList, meta: { requiresAdmin: true } },
       { path: 'purchase-orders/create', name: 'Buat Purchase Order', component: CreatePurchaseOrder, meta: { requiresAdmin: true, parent: 'Daftar Purchase Order' } },
       { path: 'purchase-orders/:id', name: 'Detail Purchase Order', component: PurchaseOrderDetail, meta: { requiresAdmin: true, parent: 'Daftar Purchase Order' } },
     ]
