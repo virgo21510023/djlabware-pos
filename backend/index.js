@@ -21,7 +21,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api', allRoutes);
 
 // Untuk semua permintaan lain, sajikan aplikasi Vue
-app.get('*', (req, res) => {
+// Tangkap semua permintaan GET yang BUKAN ke /api
+app.get(/^\/(?!api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'app', 'index.html'));
 });
 
