@@ -9,19 +9,22 @@ const allRoutes = require('./routes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Middleware umum
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Menyajikan file statis dari folder 'public' (untuk logo dan APLIKASI frontend)
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Arahkan semua permintaan API ke /api
+// 1. Arahkan semua permintaan API ke /api TERLEBIH DAHULU
 app.use('/api', allRoutes);
 
-// Untuk semua permintaan lain, sajikan aplikasi Vue
-app.get('*', (req, res) => {
+// 2. Sajikan file statis (seperti logo, CSS, JS hasil build) dari folder public
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public', 'app')));
+
+// 3. Rute "tangkap semua" (solusi Stack Overflow) di POSISI PALING AKHIR
+// Ini akan menangani semua permintaan halaman (seperti /inventory, /pos)
+// dan menyajikan aplikasi Vue utama.
+app.get(/^\/(?!api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'app', 'index.html'));
 });
 

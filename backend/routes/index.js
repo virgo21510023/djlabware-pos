@@ -39,7 +39,8 @@ router.get('/transactions/:id', protect, admin, transactionController.getTransac
 router.put('/transactions/:id/settle', protect, admin, transactionController.settleTransaction);
 router.get('/transactions/:transactionId/returnable-items', protect, admin, transactionController.getReturnableItems);
 
-// Report Routes
+// Report Routesrouter.post('/products/import', protect, admin, upload.uploadImportFile.single('importFile'), productController.importProducts);
+router.post('/products/import', protect, admin, upload.uploadImportFile.single('importFile'), productController.importProducts);
 router.get('/reports/sales', protect, admin, reportController.getSalesReport);
 
 // Stock Entry Routes
@@ -54,7 +55,7 @@ router.delete('/users/:id', protect, admin, userController.deleteUser);
 // Setting Routes
 router.get('/settings', protect, settingsController.getSettings);
 router.put('/settings', protect, admin, settingsController.updateSettings);
-router.post('/settings/upload-logo', protect, admin, upload.single('logo'), settingsController.uploadLogo);
+router.post('/settings/upload-logo', protect, admin, upload.uploadLogo.single('logo'), settingsController.uploadLogo);
 
 // Purchase Routes
 router.post('/purchases', protect, admin, purchaseController.createPurchase);
