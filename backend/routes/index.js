@@ -28,6 +28,7 @@ router.post('/products', protect, admin, productController.createProduct);
 router.put('/products/:id', protect, admin, productController.updateProduct);
 router.delete('/products/:id', protect, admin, productController.deleteProduct);
 router.get('/products/:id/purchase-history', protect, admin, productController.getProductPurchaseHistory);
+router.post('/products/import', protect, admin, upload.uploadImportFile.single('importFile'), productController.importProducts);
 
 // Transaction Routes
 router.post('/transactions', protect, transactionController.createTransaction);
@@ -77,7 +78,7 @@ router.delete('/users/:id', protect, admin, userController.deleteUser);
 // Setting Routes
 router.get('/settings', protect, settingsController.getSettings);
 router.put('/settings', protect, admin, settingsController.updateSettings);
-router.post('/settings/upload-logo', protect, admin, upload.single('logo'), settingsController.uploadLogo);
+router.post('/settings/upload-logo', protect, admin, upload.uploadLogo.single('logo'), settingsController.uploadLogo);
 
 // Utility Routes
 router.get('/utils/categories', protect, admin, utilityController.getAllCategories);

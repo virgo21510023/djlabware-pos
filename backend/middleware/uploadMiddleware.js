@@ -24,21 +24,14 @@ const logoFileFilter = (req, file, cb) => {
   }
 };
 
-exports.uploadLogo = multer({ 
-  storage: logoStorage,
-  limits: { fileSize: 1024 * 1024 * 2 },
-  fileFilter: logoFileFilter
-});
-
-
-// --- Konfigurasi BARU untuk File Impor (Excel) ---
-const importStorage = multer.memoryStorage(); // Simpan file di memori untuk diproses
+// --- Konfigurasi untuk File Impor (Excel) ---
+const importStorage = multer.memoryStorage();
 
 const importFileFilter = (req, file, cb) => {
     const allowedTypes = [
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-        'text/csv' // .csv
+        'text/csv'
     ];
     if (allowedTypes.includes(file.mimetype)) {
         cb(null, true);
@@ -46,6 +39,13 @@ const importFileFilter = (req, file, cb) => {
         cb(new Error('Hanya file Excel (.xlsx) atau CSV yang diizinkan!'), false);
     }
 };
+
+// Ekspor setiap konfigurasi secara terpisah
+exports.uploadLogo = multer({ 
+  storage: logoStorage,
+  limits: { fileSize: 1024 * 1024 * 2 },
+  fileFilter: logoFileFilter
+});
 
 exports.uploadImportFile = multer({
     storage: importStorage,
