@@ -1,4 +1,4 @@
-const { Product, PurchaseItem, Purchase, Sequelize } = require('../models');
+const { Product, PurchaseItem, Purchase, sequelize, Sequelize } = require('../models');
 const { Op } = Sequelize;
 const xlsx = require('xlsx'); // <-- Tambahkan ini di paling atas file
 
