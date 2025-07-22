@@ -1,5 +1,6 @@
-const { Product, PurchaseItem, Purchase, Sequelize } = require('../models');
+const { Product, PurchaseItem, Purchase, sequelize, Sequelize } = require('../models');
 const { Op } = Sequelize;
+const xlsx = require('xlsx'); // <-- Tambahkan ini di paling atas file
 
 /**
  * Mengambil semua produk dengan paginasi dan pencarian
@@ -133,5 +134,65 @@ exports.getProductPurchaseHistory = async (req, res) => {
   } catch (error) {
     console.error("Error getProductPurchaseHistory:", error);
     res.status(500).json({ message: "Gagal mengambil riwayat pembelian produk" });
+  }
+};
+
+/**
+ * FUNGSI BARU UNTUK IMPOR PRODUK DARI FILE XLSX
+ */
+exports.importProducts = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Tidak ada file yang diunggah.' });
+    }
+
+    // Baca file dari buffer memori
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const data = xlsx.utils.sheet_to_json(worksheet);
+
+    const errors = [];
+    const productsToCreate = [];
+
+    // Validasi setiap baris
+    data.forEach((row, index) => {
+      const rowNum = index + 2; // Baris di Excel dimulai dari 1, dan baris 1 adalah header
+      if (!row['Nama Produk'] || !row['Harga Beli (HPP)'] || !row['Harga Jual'] || !row['Stok'] || !row['Satuan']) {
+        errors.push(`Baris ${rowNum}: Kolom wajib (Nama, Harga Beli, Harga Jual, Stok, Satuan) tidak boleh kosong.`);
+        return;
+      }
+      if (isNaN(Number(row['Harga Beli (HPP)'])) || isNaN(Number(row['Harga Jual'])) || isNaN(Number(row['Stok']))) {
+          errors.push(`Baris ${rowNum}: Harga dan Stok harus berupa angka.`);
+          return;
+      }
+
+      productsToCreate.push({
+        name: row['Nama Produk'],
+        kategori: row['Kategori'] || 'Lainnya',
+        merk: row['Merk'] || 'N/A',
+        stock: Number(row['Stok']),
+        satuan: row['Satuan'],
+        hpp: Number(row['Harga Beli (HPP)']),
+        sell_price: Number(row['Harga Jual']),
+        sku: row['SKU'] || null,
+        status: 'listed'
+      });
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({ message: 'Ditemukan kesalahan dalam file Anda:', errors });
+    }
+    
+    // Jika tidak ada error, masukkan semua data sekaligus
+    await Product.bulkCreate(productsToCreate, { transaction: t });
+
+    await t.commit();
+    res.json({ message: `${productsToCreate.length} produk berhasil diimpor.` });
+
+  } catch (error) {
+    await t.rollback();
+    res.status(500).json({ message: 'Gagal memproses file impor', error: error.message });
   }
 };

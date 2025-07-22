@@ -16,21 +16,27 @@ exports.getAllUsers = async (req, res) => {
 
 // Membuat pengguna baru (hanya Kasir)
 exports.createUser = async (req, res) => {
-  const { name, username, password } = req.body;
+  // Ambil 'role' dari body, beri default 'Kasir' jika kosong
+  const { name, username, password, role = 'Kasir' } = req.body;
+  if (!name || !username || !password) {
+    return res.status(400).json({ message: 'Nama, username, dan password harus diisi' });
+  }
+
   try {
-    // Hash password sebelum disimpan
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({
       name,
       username,
       password: hashedPassword,
-      role: 'Kasir' // Admin hanya bisa membuat Kasir
+      role // Gunakan role dari request
     });
-    // Hapus password dari respons
-    newUser.password = undefined;
-    res.status(201).json(newUser);
+
+    const userResponse = { ...newUser.get() };
+    delete userResponse.password;
+
+    res.status(201).json(userResponse);
   } catch (error) {
-    res.status(400).json({ message: "Gagal membuat pengguna", error: error.message });
+    res.status(400).json({ message: 'Gagal membuat pengguna', error: error.message });
   }
 };
 
