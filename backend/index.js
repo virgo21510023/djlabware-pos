@@ -14,14 +14,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Menyajikan file statis dari folder 'public' (untuk logo dan APLIKASI frontend)
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Arahkan semua permintaan API ke /api
+// 1. Arahkan semua permintaan API ke /api TERLEBIH DAHULU
 app.use('/api', allRoutes);
 
-// Untuk semua permintaan lain, sajikan aplikasi Vue
-// Tangkap semua permintaan GET yang BUKAN ke /api
+// 2. Sajikan file statis (seperti logo, CSS, JS hasil build) dari folder public
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public', 'app')));
+
+// 3. Rute "tangkap semua" (SOLUSI STACK OVERFLOW) di POSISI PALING AKHIR
+// Ini akan menangani semua permintaan halaman (seperti /inventory, /pos)
+// dan menyajikan aplikasi Vue utama.
 app.get(/^\/(?!api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'app', 'index.html'));
 });
